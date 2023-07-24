@@ -9,9 +9,9 @@
 #include <memory>
 #include <unistd.h>
 #include <cassert>
-#include "FixedMemBlock.h"
 #include <sys/time.h>
 #include "LogFile.h"
+#include "FixedMemBlock.h"
 #include "../Thread/Thread.h"
 #include "../Utils/Utils.h"
 

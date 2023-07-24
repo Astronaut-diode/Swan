@@ -1,16 +1,30 @@
-#include <iostream>
-#include "Logger/FixedMemBlock.h"
+#include <vector>
 #include "Logger/AsyncLog.h"
-#include "Logger/LogStream.h"
-#include <fstream>
+#include "TaskScheduler/TaskScheduler.h"
 
-AsyncLog asyncLog(false);  // 定义为全局的变量,方便LogStream析构的时候，将内容写入到异步线程中。
+AsyncLog asyncLog(true);  // 定义为全局的变量,方便LogStream析构的时候，将内容写入到异步线程中。
 
 int main() {
-    int index = 0;
+    TaskScheduler taskScheduler;
+    // todo:将连接记录到tcpserver中。
+    std::vector<std::shared_ptr<TcpConnection>> connections_;
+
     while (true) {
-        LOG << "信息" << index++ << "新的信息\n";  // 现在可以通过LOG直接进行异步日志的写入。
-        sleep(1);
+        {
+            std::shared_ptr<TcpConnection> con = std::make_shared<TcpConnection>();
+            std::cout << "当前的use_count:" << con.use_count() << std::endl;
+            std::cout << "地址是" << con.get() << std::endl;
+            connections_.push_back(con);
+            std::cout << "当前的use_count:" << con.use_count() << std::endl;
+            std::cout << "地址是" << connections_[0].get() << std::endl;
+            taskScheduler.insertToConnections(con);
+        }
+        std::cout << "当前的use_count:" << connections_[0].use_count() << std::endl;
+        std::cout << "地址是" << connections_[0].get() << std::endl;
+        sleep(15);
+        std::cout << "当前的use_count:" << connections_[0].use_count() << std::endl;
+        std::cout << "地址是" << connections_[0].get() << std::endl;
+        sleep(10000);
     }
     return 0;
 }

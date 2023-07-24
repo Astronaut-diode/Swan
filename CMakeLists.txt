@@ -12,6 +12,11 @@ add_executable(Swan
         Utils/Utils.h
         Thread/Thread.cpp Thread/Thread.h
         Logger/LogFile.cpp Logger/LogFile.h
-        Logger/LogStream.cpp Logger/LogStream.h)
+        Logger/LogStream.cpp Logger/LogStream.h
+        TaskScheduler/TaskScheduler.cpp TaskScheduler/TaskScheduler.h
+        TaskScheduler/TimerQueue.cpp TaskScheduler/TimerQueue.h
+        TaskScheduler/Timer.cpp TaskScheduler/Timer.h
+        TaskScheduler/CircleBuffer.h
+        TcpConnection/TcpConnection.cpp TcpConnection/TcpConnection.h Poller/Poller.cpp Poller/Poller.h Channel/Channel.cpp Channel/Channel.h)
 
 target_link_libraries(Swan pthread)
