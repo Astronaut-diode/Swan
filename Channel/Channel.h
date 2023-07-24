@@ -49,6 +49,8 @@ public:
 
     void enableRead();  // 设置channel对read感兴趣。
 
+    void enableWrite();  // 设置channel对write感兴趣。
+
     void update();  // 更新epoll监听事件。
 
     int events();
@@ -56,6 +58,10 @@ public:
     int fd();
 
     void setRevents(int event);  // 设置发生的事情。
+
+    void disableRead();
+
+    void disableWrite();
 };
 
 #endif //SWAN_CHANNEL_H

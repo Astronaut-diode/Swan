@@ -43,6 +43,10 @@ void Channel::enableRead() {
     events_ = events_ | EPOLLIN;
 }
 
+void Channel::enableWrite() {
+    events_ = events_ | EPOLLOUT;
+}
+
 int Channel::events() {
     return events_;
 }
@@ -56,4 +60,12 @@ int Channel::fd() {
  */
 void Channel::setRevents(int event) {
     revents_ = event;
+}
+
+void Channel::disableRead() {
+    events_ = events_ & (~EPOLLIN);
+}
+
+void Channel::disableWrite() {
+    events_ = events() & (~EPOLLOUT);
 }

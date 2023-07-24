@@ -8,7 +8,7 @@
 TaskScheduler::TaskScheduler() {
     timerQueue_ = std::make_unique<TimerQueue>();
     timerQueue_->addTimer(std::bind(&TaskScheduler::rotateTimeWheel, this), 1, true);  // 开始循环不断的触发对于时间轮的监听事务，转动时间轮。
-    connections_ = std::make_unique<connectionList>();
+    timeWheel_ = std::make_unique<connectionList>();
     thread_ = std::make_unique<Thread>(kTimerThreadName,
                                        std::bind(&TaskScheduler::launchTimeChannel, this));  // 创建对应的线程用例。
     thread_->createThread();  // 创建并启动子线程，让其执行给定的任务。
@@ -23,10 +23,10 @@ TaskScheduler::~TaskScheduler() {
  */
 void TaskScheduler::dump() {
     LOG << "时间轮内容:\n";
-    for (int i = 0; i < connections_->size(); ++i) {
+    for (int i = 0; i < timeWheel_->size(); ++i) {
         LOG << "[" << i << "]===>\n";
-        for (std::unordered_set<sharedWeakTcpConnection>::iterator ite = (*connections_)[i].begin();
-             ite != (*connections_)[i].end(); ++ite) {
+        for (std::unordered_set<sharedWeakTcpConnection>::iterator ite = (*timeWheel_)[i].begin();
+             ite != (*timeWheel_)[i].end(); ++ite) {
             LOG << (*ite).get()->weakPtr_.lock().get() << "\n";
         }
     }
@@ -36,7 +36,7 @@ void TaskScheduler::dump() {
  * 旋转时间轮。
  */
 void TaskScheduler::rotateTimeWheel() {
-    connections_->push_back(Bucket());  // 排挤出第一个元素。
+    timeWheel_->push_back(Bucket());  // 排挤出第一个元素。
     dump();
 }
 
@@ -67,6 +67,6 @@ void TaskScheduler::launchTimeChannel() {
  */
 void TaskScheduler::insertToConnections(const std::shared_ptr<TcpConnection> &tcpConnection) {
     // 注意，这个TcpConnection肯定是已经被记录到share_ptr了，为了让关闭连接的时候可以erase直接析构对象，我们这里不能再次设计为share_ptr,只能够使用weak_ptr，仅仅用于记录这个对象是否存在，如果存在，析构的时候调用stop函数就行。
-    (*connections_).data_.back().insert(std::make_shared<WeakTcpConnection>(tcpConnection));
+    (*timeWheel_).data_.back().insert(std::make_shared<WeakTcpConnection>(tcpConnection));
     dump();  // 因为每一次定时dump的时候，都会移动一个Bucket,所以是看不见插入的内容在结尾的时候的，需要在这里手动看一编。
 }

@@ -17,6 +17,10 @@ add_executable(Swan
         TaskScheduler/TimerQueue.cpp TaskScheduler/TimerQueue.h
         TaskScheduler/Timer.cpp TaskScheduler/Timer.h
         TaskScheduler/CircleBuffer.h
-        TcpConnection/TcpConnection.cpp TcpConnection/TcpConnection.h Poller/Poller.cpp Poller/Poller.h Channel/Channel.cpp Channel/Channel.h)
+        TcpConnection/TcpConnection.cpp TcpConnection/TcpConnection.h
+        Poller/Poller.cpp Poller/Poller.h
+        Channel/Channel.cpp Channel/Channel.h
+        TcpServer/TcpServer.cpp TcpServer/TcpServer.h
+        Monitor/Monitor.cpp Monitor/Monitor.h Acceptor/Acceptor.cpp Acceptor/Acceptor.h TcpConnection/Address.cpp TcpConnection/Address.h)
 
 target_link_libraries(Swan pthread)
