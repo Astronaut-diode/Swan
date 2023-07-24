@@ -9,6 +9,7 @@
 #include <cassert>
 #include <fstream>
 #include <chrono>
+#include <sstream>
 #include "AsyncLog.h"
 
 class LogStream {
@@ -27,6 +28,8 @@ public:
     LogStream &operator<<(const char *data);  // 追加日志内容。
 
     LogStream &operator<<(int data);  // 追加日志内容。
+
+    LogStream &operator<<(const void* ptr);  // 追加日志内容。
 
     ~LogStream();  // 调用析构函数，并将内容写到AsyncLog的前端内存块中。
 };

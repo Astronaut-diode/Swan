@@ -18,7 +18,7 @@ LogStream::LogStream(const char *fileName, int codeLine) {
     int second = localTime.tm_sec;
     char pthreadName[16];  // 获取当前线程的名字
     pthread_getname_np(pthread_self(), pthreadName, sizeof(pthreadName));
-    snprintf(stream_, kLogStreamMaxLength, "[%d-%d-%d %d:%d:%d %s:%s:%d] ", year, month, day, hour, minute, second,
+    snprintf(stream_, kLogStreamMaxLength, "[%d-%2d-%2d %2d:%2d:%2d %s:%s:%4d] ", year, month, day, hour, minute, second,
              pthreadName, fileName, codeLine);  // 设置日志的每一行打头的内容。
 }
 
@@ -29,6 +29,14 @@ LogStream::LogStream(const char *fileName, int codeLine) {
  */
 LogStream &LogStream::operator<<(const char *data) {
     strcat(stream_, data);
+    return *this;
+}
+
+// 重载 << 运算符模板，用于输出指针的地址
+LogStream& LogStream::operator<<(const void* ptr) {
+    std::ostringstream oss;
+    oss << ptr;
+    strcat(stream_, oss.str().c_str());
     return *this;
 }
 
