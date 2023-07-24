@@ -22,7 +22,6 @@ private:  // 函数区域
 public:
     CircleBuffer<LEN, T>() {
         data_.resize(LEN);
-        std::cout << &data_[0] << std::endl;
     }
 
     ~CircleBuffer<LEN, T>() {

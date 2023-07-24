@@ -27,7 +27,7 @@ struct WeakTcpConnection {
         std::cout << "地址是" << p.get() << std::endl;
         if(p) {  // 因为是weak指针，所以原始内容被释放了的话，这里结果就是空，否则就不会是空。
             // todo:准备关闭目标的connection连接。
-            (*p).stop();
+            (*p).handleClose();
         }
     }
 };
@@ -41,7 +41,7 @@ public:  // 用于写typedef或者静态常量等。
     typedef CircleBuffer<kLen, Bucket> connectionList;
 private:  // 变量区域
     std::unique_ptr<TimerQueue> timerQueue_;  // 定时器列表。
-    std::unique_ptr<connectionList> connections_;  // 时间轮，每一个bucket中保存的是unordered_set<shared_ptr<WeakTcpConnection>>;
+    std::unique_ptr<connectionList> timeWheel_;  // 时间轮，每一个bucket中保存的是unordered_set<shared_ptr<WeakTcpConnection>>;
     std::unique_ptr<Thread> thread_;  // 预备开启定时器线程。
 public:
 
