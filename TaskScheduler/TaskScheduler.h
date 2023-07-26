@@ -23,10 +23,7 @@ struct WeakTcpConnection {
 
     ~WeakTcpConnection() {  // 进行析构，将weakPtr的结果转换为shared_ptr，并调用关闭连接的操作。
         std::shared_ptr<TcpConnection> p = weakPtr_.lock();
-        std::cout << "当前的use_count:" << p.use_count() << std::endl;
-        std::cout << "地址是" << p.get() << std::endl;
         if(p) {  // 因为是weak指针，所以原始内容被释放了的话，这里结果就是空，否则就不会是空。
-            // todo:准备关闭目标的connection连接。
             (*p).handleClose();
         }
     }

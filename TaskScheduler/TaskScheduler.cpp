@@ -22,22 +22,25 @@ TaskScheduler::~TaskScheduler() {
  * 显示当前的时间轮情况。
  */
 void TaskScheduler::dump() {
-    LOG << "时间轮内容:\n";
+    std::stringstream buffer;
+    buffer << "时间轮内容:\n";
     for (int i = 0; i < timeWheel_->size(); ++i) {
-        LOG << "[" << i << "]===>\n";
+        buffer << "[" << i << "]===>";
         for (std::unordered_set<sharedWeakTcpConnection>::iterator ite = (*timeWheel_)[i].begin();
              ite != (*timeWheel_)[i].end(); ++ite) {
-            LOG << (*ite).get()->weakPtr_.lock().get() << "\n";
+            buffer << static_cast<void *>((*ite).get()->weakPtr_.lock().get()) << " ";
         }
+        buffer << "\n";
     }
+    LOG << buffer.str().c_str();
 }
 
 /**
  * 旋转时间轮。
  */
 void TaskScheduler::rotateTimeWheel() {
+    dump();  // 因为每一次定时dump的时候，都会移动一个Bucket,所以是看不见插入的内容在结尾的时候的，需要在这里手动看一遍。
     timeWheel_->push_back(Bucket());  // 排挤出第一个元素。
-    dump();
 }
 
 /**
@@ -68,5 +71,4 @@ void TaskScheduler::launchTimeChannel() {
 void TaskScheduler::insertToConnections(const std::shared_ptr<TcpConnection> &tcpConnection) {
     // 注意，这个TcpConnection肯定是已经被记录到share_ptr了，为了让关闭连接的时候可以erase直接析构对象，我们这里不能再次设计为share_ptr,只能够使用weak_ptr，仅仅用于记录这个对象是否存在，如果存在，析构的时候调用stop函数就行。
     (*timeWheel_).data_.back().insert(std::make_shared<WeakTcpConnection>(tcpConnection));
-    dump();  // 因为每一次定时dump的时候，都会移动一个Bucket,所以是看不见插入的内容在结尾的时候的，需要在这里手动看一编。
 }

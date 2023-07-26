@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
+#include <fcntl.h>
 #include <functional>
 #include "../Channel/Channel.h"
 #include "../TcpConnection/Address.h"
@@ -37,6 +38,7 @@ private:  // 函数区域
 
     void setKeepAlive(bool on);
 
+    void SetNonBlocking(int fd);
 public:
     Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConnectionCallBack);
 

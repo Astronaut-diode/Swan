@@ -21,6 +21,6 @@ add_executable(Swan
         Poller/Poller.cpp Poller/Poller.h
         Channel/Channel.cpp Channel/Channel.h
         TcpServer/TcpServer.cpp TcpServer/TcpServer.h
-        Monitor/Monitor.cpp Monitor/Monitor.h Acceptor/Acceptor.cpp Acceptor/Acceptor.h TcpConnection/Address.cpp TcpConnection/Address.h)
+        Monitor/Monitor.cpp Monitor/Monitor.h Acceptor/Acceptor.cpp Acceptor/Acceptor.h TcpConnection/Address.cpp TcpConnection/Address.h TcpConnection/Request.cpp TcpConnection/Request.h TcpConnection/Response.cpp TcpConnection/Response.h)
 
 target_link_libraries(Swan pthread)

@@ -52,7 +52,6 @@ void Monitor::handleWakeRead() {
     uint64_t one = 1;
     ssize_t n = ::read(wakeupFd_, &one, sizeof one);
     assert(n == sizeof one);
-    LOG << threadName_ << "被唤醒了\n";
 }
 
 /**

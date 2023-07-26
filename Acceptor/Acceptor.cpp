@@ -13,7 +13,6 @@ void Acceptor::setReuseAddr(bool on) {
     int optval = on ? 1 : 0;
     ::setsockopt(acceptorFd_, SOL_SOCKET, SO_REUSEADDR,
                  &optval, static_cast<socklen_t>(sizeof optval));
-    // FIXME CHECK
 }
 
 void Acceptor::setReusePort(bool on) {
@@ -33,11 +32,18 @@ Acceptor::Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConn
     assert(ret >= 0);
     ret = ::listen(acceptorFd_, SOMAXCONN);
     assert(ret >= 0);
+    SetNonBlocking(acceptorFd_);
     acceptorChannel_ = new Channel(acceptorFd_);
     acceptorChannel_->setReadFunctionCallBack(std::bind(&Acceptor::establishConnection, this));
     acceptorChannel_->enableRead();
     mainMonitor_->poller_.updateEpollEvents(EPOLL_CTL_ADD, acceptorChannel_);
     distributeConnectionCallBack_ = distributeConnectionCallBack;
+}
+
+void Acceptor::SetNonBlocking(int fd) {
+    int old_option = fcntl(fd, F_GETFL);
+    int new_option = old_option | O_NONBLOCK;
+    fcntl(fd, F_SETFL, new_option);
 }
 
 Acceptor::~Acceptor() {

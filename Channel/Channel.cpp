@@ -34,6 +34,13 @@ void Channel::handleEvent() {  // 当epoll接收到事件的是，分给每个ch
     if(revents_ & EPOLLIN) {
         readFunctionCallBack_();
     }
+    if(revents_ & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
+        errorFunctionCallBack_();
+        closeFunctionCallBack_();
+    }
+    if(revents_ & (EPOLLOUT)) {
+        writeFunctionCallBack_();
+    }
 }
 
 /**

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sys/epoll.h>
 #include <functional>
+#include <fcntl.h>
 #include "../Channel/Channel.h"
 #include "../Logger/LogStream.h"
 #include "../Monitor/Monitor.h"
@@ -25,7 +26,7 @@ private:  // 变量区域
 public:
 
 private:  // 函数区域
-
+    static void SetNonBlocking(int fd);
 public:
     TcpConnection();
 
