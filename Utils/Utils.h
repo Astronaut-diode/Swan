@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <cstring>
+#include <fcntl.h>
 #include <iostream>
 
 class Utils {
@@ -34,7 +35,12 @@ public:
         }
     }
 
-
+    static int setNonBlocking(int fd) {
+        int old_version = fcntl(fd, F_GETFL);
+        int new_option = old_version | O_NONBLOCK;
+        fcntl(fd, F_SETFL, new_option);
+        return old_version;
+    }
 };
 
 #endif //SWAN_UTILS_H

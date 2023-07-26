@@ -6,12 +6,11 @@
 
 
 TcpConnection::TcpConnection() {
-    std::cout << "TcpConnection()" << std::endl;
+
 }
 
 TcpConnection::TcpConnection(int connectionFd, Monitor *monitor, DeleteConnectionCallBack deleteConnectionCallBack)
         : connectionFd_(connectionFd), monitor_(monitor), deleteConnectionCallBack_(deleteConnectionCallBack) {
-    std::cout << "TcpConnection(int connectionFd)" << std::endl;
     connectionChannel_ = new Channel(connectionFd_);
     connectionChannel_->setReadFunctionCallBack(std::bind(&TcpConnection::handleRead, this));
     connectionChannel_->setCloseFunctionCallBack(std::bind(&TcpConnection::handleClose, this));
@@ -21,7 +20,7 @@ TcpConnection::TcpConnection(int connectionFd, Monitor *monitor, DeleteConnectio
 }
 
 TcpConnection::~TcpConnection() {
-    std::cout << "~TcpConnection()" << std::endl;
+
 }
 
 Channel *TcpConnection::getChannel() {
@@ -32,7 +31,6 @@ Channel *TcpConnection::getChannel() {
  * 在TcpServer中的动态连接的数组中删除，因为shared_ptr为0了，所以就会析构自己。
  */
 void TcpConnection::handleClose() {
-    std::cout << "准备关停当前对象，并析构" << std::endl;
     connectionChannel_->disableWrite();
     connectionChannel_->disableRead();
     monitor_->poller_.updateEpollEvents(EPOLL_CTL_DEL, connectionChannel_);
@@ -47,7 +45,6 @@ void TcpConnection::handleClose() {
 void TcpConnection::handleRead() {
     char buffer[1024]{'\0'};
     read(connectionFd_, buffer, 1024);
-    LOG << "收到了" << connectionFd_ << "的信息,内容是" << buffer << "\n";
 }
 
 

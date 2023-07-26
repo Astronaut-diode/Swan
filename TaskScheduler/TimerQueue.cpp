@@ -69,6 +69,7 @@ bool TimerQueue::insert(Timer *timer, timeval expire) {
 TimerQueue::TimerQueue() : timerFd_(createTimerFd()),
                            timeChannel_(new Channel(timerFd_)),
                            poller_() {
+    Utils::setNonBlocking(timerFd_);  // 设置文件描述符非阻塞。
     timeChannel_->setReadFunctionCallBack(std::bind(&TimerQueue::processRead, this));
     timeChannel_->enableRead();  // 设置为关心读事件，并且直接加入到epoll的监听中。
     poller_.updateEpollEvents(EPOLL_CTL_ADD, timeChannel_);
