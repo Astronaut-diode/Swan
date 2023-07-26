@@ -13,7 +13,6 @@ void Acceptor::setReuseAddr(bool on) {
     int optval = on ? 1 : 0;
     ::setsockopt(acceptorFd_, SOL_SOCKET, SO_REUSEADDR,
                  &optval, static_cast<socklen_t>(sizeof optval));
-    // FIXME CHECK
 }
 
 void Acceptor::setReusePort(bool on) {
@@ -25,6 +24,7 @@ void Acceptor::setReusePort(bool on) {
 Acceptor::Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConnectionCallBack) {
     mainMonitor_ = monitor;
     acceptorFd_ = createListenSocket();
+    Utils::setNonBlocking(acceptorFd_);  // 设置非阻塞。
     setReuseAddr(true);
     setReusePort(true);
     acceptorAddress_ = Address(kPort);  // 需要监听的地址。
@@ -59,5 +59,6 @@ void Acceptor::establishConnection() {
     sockaddr_in client_address;
     int client_address_size = sizeof(client_address);
     int connectionFd = accept(acceptorFd_, (sockaddr *) &client_address, (socklen_t *) &client_address_size);
+    Utils::setNonBlocking(connectionFd);
     distributeConnectionCallBack_(connectionFd);  // 预备建立连接，并将连接分给别的epoll。
 }

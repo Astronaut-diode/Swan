@@ -8,7 +8,8 @@
 __thread Monitor *threadMonitor;  // 每个线程都会有一个独立的threadMonitor，进行绑定。
 
 Monitor::Monitor() : wakeupFd_(createEventfd()),
-                                             wakeupChannel_(new Channel(wakeupFd_)), poller_() {  // 主线程的Monitor函数。
+                     wakeupChannel_(new Channel(wakeupFd_)), poller_() {  // 主线程的Monitor函数。
+    Utils::setNonBlocking(wakeupFd_);  // 设置文件描述符非阻塞。
     wakeupChannel_->setReadFunctionCallBack(std::bind(&Monitor::handleWakeRead, this));
     wakeupChannel_->enableRead();
     poller_.updateEpollEvents(EPOLL_CTL_ADD, wakeupChannel_);
@@ -52,7 +53,6 @@ void Monitor::handleWakeRead() {
     uint64_t one = 1;
     ssize_t n = ::read(wakeupFd_, &one, sizeof one);
     assert(n == sizeof one);
-    LOG << threadName_ << "被唤醒了\n";
 }
 
 /**
