@@ -32,7 +32,7 @@ void TaskScheduler::dump() {
         }
         buffer << "\n";
     }
-    LOG << buffer.str().c_str();
+//    LOG << buffer.str().c_str();
 }
 
 /**

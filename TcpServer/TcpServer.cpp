@@ -50,6 +50,7 @@ void TcpServer::distributeConnection(int connectionFd) {
                                                                           monitors_[target],
                                                                           std::bind(&TcpServer::deleteConnection, this, std::placeholders::_1));  // 创建了TcpConnection以及Channel，并且已经设定了关心读事件。
     sharedConnections_[connectionFd] = conn;
+    conn->setInsertTimerWheel(insertToTimeWheelCallBack_);
     monitors_[target]->poller_.updateEpollEvents(EPOLL_CTL_ADD, conn->getChannel());  // 让对应的monitor开始监听该连接。
     insertToTimeWheelCallBack_(conn);  // 不仅将shared_ptr<TcpConnection>插入vector中，还插入到了时间轮之中。
 }

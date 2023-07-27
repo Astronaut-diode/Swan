@@ -34,6 +34,7 @@ Acceptor::Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConn
     ret = ::listen(acceptorFd_, SOMAXCONN);
     assert(ret >= 0);
     acceptorChannel_ = new Channel(acceptorFd_);
+    acceptorChannel_->useByPoller_ = 0100;  // 代表是acceptor的文件描述符。
     acceptorChannel_->setReadFunctionCallBack(std::bind(&Acceptor::establishConnection, this));
     acceptorChannel_->enableRead();
     mainMonitor_->poller_.updateEpollEvents(EPOLL_CTL_ADD, acceptorChannel_);

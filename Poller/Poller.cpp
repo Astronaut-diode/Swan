@@ -25,6 +25,7 @@ void Poller::updateEpollEvents(int operation, Channel *channel) {
     event.events = channel->events();
     event.data.fd = channel->fd();
     event.data.ptr = channel;
+    channel->setRevents(0);  // 重新赋值。
     assert(::epoll_ctl(pollerFd_, operation, channel->fd(), &event) >= 0);
 }
 

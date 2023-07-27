@@ -22,14 +22,13 @@ private:  // 变量区域
     int fd_;  // 使用的文件描述符。
     int events_;  // 关心的事件。
     int revents_;  // 真实发生的事件。
-    int useByPoller_;  // 在poller中的状态。
     ReadFunctionCallBack readFunctionCallBack_;  // 四种函数的回调函数。
     WriteFunctionCallBack writeFunctionCallBack_;
     CloseFunctionCallBack closeFunctionCallBack_;
     ErrorFunctionCallBack errorFunctionCallBack_;
 
 public:
-
+    int useByPoller_;  // 在poller中的状态。
 private:  // 函数区域
 
 public:
@@ -48,6 +47,8 @@ public:
     void handleEvent();  // 接收到信号的时候开始处理。
 
     void enableRead();  // 设置channel对read感兴趣。
+
+    void enableOneShot();
 
     void enableWrite();  // 设置channel对write感兴趣。
 

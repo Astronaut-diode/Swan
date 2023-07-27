@@ -11,21 +11,31 @@
 #include "../Channel/Channel.h"
 #include "../Logger/LogStream.h"
 #include "../Monitor/Monitor.h"
+#include "Request.h"
 
 typedef std::function<void(int)> DeleteConnectionCallBack;
+class TcpConnection;
+typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> InsertToTimeWheelCallBack;
 
-class TcpConnection {
+class TcpConnection: public std::enable_shared_from_this<TcpConnection>{
 public:  // 用于写typedef或者静态常量等。
-
+    enum CONNECTION_STATEMENT {  // 当前的连接处于什么状态。
+        HTTP = 0,
+        WebSocket
+    };
 private:  // 变量区域
     int connectionFd_;  // 使用的文件描述符。
     Channel *connectionChannel_;  // 对应的channel。
     Monitor *monitor_;
     DeleteConnectionCallBack deleteConnectionCallBack_;  // 删除Tcpserver中connections的回调函数。
+    std::unique_ptr<Request> request_;  // 该连接对应的request。
+    CONNECTION_STATEMENT connectionStatement_;  // 当前连接的状态。
+    InsertToTimeWheelCallBack insertToTimeWheelCallBack_;
+    char serverKey_[20];
 public:
 
 private:  // 函数区域
-
+    std::shared_ptr<TcpConnection> getSharedPtr();
 public:
     TcpConnection();
 
@@ -35,7 +45,7 @@ public:
 
     Channel *getChannel();
 
-    void handleClose() ;
+    void handleClose();
 
     /**
      * connectionChannel受到信息以后的回调事件。
@@ -45,6 +55,8 @@ public:
     void handleWrite();
 
     void handleError();
+
+    void setInsertTimerWheel(InsertToTimeWheelCallBack insertToTimeWheelCallBack);
 };
 
 #endif //SWAN_TCPCONNECTION_H

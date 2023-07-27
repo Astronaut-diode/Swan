@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <title>websocket test</title>
+    <script>
+        var socket;
+        function Connect(){
+            try{
+                socket=new WebSocket('ws://localhost:8081');
+            }catch(e){
+                alert('error1');
+                return;
+            }
+            socket.onopen = sOpen;
+            socket.onerror = sError;
+            socket.onmessage= sMessage;
+            socket.onclose= sClose;
+        }
+        function sOpen(){
+            alert('connect success!');
+        }
+        var b;
+        function sError(e){
+            b = e;
+            alert("error " + e);
+        }
+        var m;
+        function sMessage(msg){
+            m = msg;
+            console.log(m);
+            alert('server says:' + msg.data + "调用了append方法");
+            append(msg.data);
+        }
+        function sClose(e){
+            alert("connect closed2:" + e.code);
+        }
+        function Send(){
+            socket.send(document.getElementById("msg").value);
+            alert("我已经发送了消息");
+        }
+        function Close(){
+            socket.close();
+        }
+    </script>
+</head>
+
+<body>
+<input id="msg" type="text">
+<button id="connect" onclick="Connect();">Connect</button>
+<button id="send" onclick="Send();">Send</button>
+<button id="close" onclick="Close();">Close</button>
+
+
+<table border="1px" style="width: 640px;text-align: center; margin: auto; table-layout: fixed;">
+    <thead>
+    <tr>
+        <th>内容</th>
+    </tr>
+    </thead>
+    <tbody id="dynamic_body">
+
+    </tbody>
+</table>
+</body>
+
+</html>
+<script>
+    function append(content) {
+        var dynamic_body = document.getElementById("dynamic_body");
+        var new_row = document.createElement("tr");
+        var name_cell = document.createElement("td");
+        name_cell.textContent = content;
+        new_row.appendChild(name_cell);
+        dynamic_body.appendChild(new_row);
+    }
+
+</script>

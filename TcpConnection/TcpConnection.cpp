@@ -17,6 +17,9 @@ TcpConnection::TcpConnection(int connectionFd, Monitor *monitor, DeleteConnectio
     connectionChannel_->setWriteFunctionCallBack(std::bind(&TcpConnection::handleWrite, this));
     connectionChannel_->setErrorFunctionCallBack(std::bind(&TcpConnection::handleError, this));
     connectionChannel_->enableRead();
+    connectionChannel_->enableOneShot();
+    request_ = std::make_unique<Request>(connectionFd_);
+    connectionStatement_ = CONNECTION_STATEMENT::HTTP;
 }
 
 TcpConnection::~TcpConnection() {
@@ -34,6 +37,7 @@ void TcpConnection::handleClose() {
     connectionChannel_->disableWrite();
     connectionChannel_->disableRead();
     monitor_->poller_.updateEpollEvents(EPOLL_CTL_DEL, connectionChannel_);
+    close(connectionFd_);
     deleteConnectionCallBack_(connectionFd_);
     monitor_ = nullptr;  // 悬空，防止被析构掉。
 }
@@ -43,8 +47,27 @@ void TcpConnection::handleClose() {
  * connectionChannel受到信息以后的回调事件。
  */
 void TcpConnection::handleRead() {
-    char buffer[1024]{'\0'};
-    read(connectionFd_, buffer, 1024);
+    if(connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
+        request_->receiveWebSocketRequest();
+        connectionChannel_->enableRead();
+        connectionChannel_->enableOneShot();
+        monitor_->poller_.updateEpollEvents(EPOLL_CTL_MOD, connectionChannel_);  // 因为是oneshot所以需要重新监听。
+        insertToTimeWheelCallBack_(shared_from_this());
+        return;
+    }
+    if (request_->receiveHTTPRequest()) {  // 如果连接建立成功，那就改变状态。
+        connectionStatement_ = CONNECTION_STATEMENT::WebSocket;
+        memset(serverKey_, '\0', sizeof(serverKey_));
+        strcpy(serverKey_, request_->serverKey_);
+    }
+    connectionChannel_->enableRead();
+    connectionChannel_->enableOneShot();
+    monitor_->poller_.updateEpollEvents(EPOLL_CTL_MOD, connectionChannel_);  // 因为是oneshot所以需要重新监听。
+    insertToTimeWheelCallBack_(shared_from_this());
+}
+
+std::shared_ptr<TcpConnection> TcpConnection::getSharedPtr() {
+    return shared_from_this();
 }
 
 
@@ -54,4 +77,8 @@ void TcpConnection::handleWrite() {
 
 void TcpConnection::handleError() {
 
+}
+
+void TcpConnection::setInsertTimerWheel(InsertToTimeWheelCallBack insertToTimeWheelCallBack) {
+    insertToTimeWheelCallBack_ = insertToTimeWheelCallBack;
 }

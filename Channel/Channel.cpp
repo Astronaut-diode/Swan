@@ -2,6 +2,7 @@
 // Created by diode on 23-7-23.
 //
 #include "Channel.h"
+#include <iostream>
 
 void Channel::setReadFunctionCallBack(ReadFunctionCallBack readFunctionCallBack) {
     readFunctionCallBack_ = readFunctionCallBack;
@@ -31,6 +32,12 @@ Channel::~Channel() {
 }
 
 void Channel::handleEvent() {  // 当epoll接收到事件的是，分给每个channel自己执行。
+    if(useByPoller_ == 0100) {
+        readFunctionCallBack_();
+    } else
+    if(revents_ & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+        closeFunctionCallBack_();
+    }else
     if(revents_ & EPOLLIN) {
         readFunctionCallBack_();
     }
@@ -41,6 +48,10 @@ void Channel::handleEvent() {  // 当epoll接收到事件的是，分给每个ch
  */
 void Channel::enableRead() {
     events_ = events_ | EPOLLIN;
+}
+
+void Channel::enableOneShot() {
+    events_ = events_ | EPOLLONESHOT;
 }
 
 void Channel::enableWrite() {
