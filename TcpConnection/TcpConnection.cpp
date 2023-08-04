@@ -18,7 +18,7 @@ TcpConnection::TcpConnection(int connectionFd, Monitor *monitor, DeleteConnectio
     connectionChannel_->setErrorFunctionCallBack(std::bind(&TcpConnection::handleError, this));
     connectionChannel_->enableRead();
     connectionChannel_->enableOneShot();
-    request_ = std::make_unique<Request>(connectionFd_);
+    request_ = new Request(connectionFd_);
     connectionStatement_ = CONNECTION_STATEMENT::HTTP;
 }
 
@@ -47,7 +47,7 @@ void TcpConnection::handleClose() {
  * connectionChannel受到信息以后的回调事件。
  */
 void TcpConnection::handleRead() {
-    if(connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
+    if (connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
         request_->receiveWebSocketRequest();
         connectionChannel_->enableRead();
         connectionChannel_->enableOneShot();
@@ -82,3 +82,20 @@ void TcpConnection::handleError() {
 void TcpConnection::setInsertTimerWheel(InsertToTimeWheelCallBack insertToTimeWheelCallBack) {
     insertToTimeWheelCallBack_ = insertToTimeWheelCallBack;
 }
+
+void TcpConnection::setUpdateTimerWheel(UpdateToTimeWheelCallBack updateToTimeWheelCallBack) {
+    updateToTimeWheelCallBack_ = updateToTimeWheelCallBack;
+}
+
+/**
+ * 设置时间轮对应的上下文信息。
+ * @param weakTcpConnection
+ */
+void TcpConnection::setContext(const std::shared_ptr<WeakTcpConnection> &weakTcpConnection) {
+    context_ = weakTcpConnection;
+}
+
+const std::shared_ptr<WeakTcpConnection> &TcpConnection::getContext() {
+    return context_;
+}
+

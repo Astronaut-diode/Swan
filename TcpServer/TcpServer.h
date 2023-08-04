@@ -17,6 +17,7 @@
 
 typedef std::vector<std::unique_ptr<Thread>> ThreadList;
 typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> InsertToTimeWheelCallBack;
+typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> UpdateToTimeWheelCallBack;
 
 class TcpServer {
 public:  // 用于写typedef或者静态常量等。
@@ -30,12 +31,13 @@ private:  // 变量区域
     std::map<int, std::shared_ptr<TcpConnection>> sharedConnections_;  // 所有的连接，并且使用了shared指针。;
     int distribute_;  // 用于轮询查询的数字。
     InsertToTimeWheelCallBack insertToTimeWheelCallBack_;
+    UpdateToTimeWheelCallBack updateToTimeWheelCallBack_;
 public:
 
 private:  // 函数区域
 
 public:
-    TcpServer(InsertToTimeWheelCallBack insertToTimeWheelCallBack);
+    TcpServer(InsertToTimeWheelCallBack insertToTimeWheelCallBack, UpdateToTimeWheelCallBack updateToTimeWheelCallBack);
 
     ~TcpServer();
 
