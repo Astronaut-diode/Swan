@@ -19,7 +19,7 @@ class AsyncLog {
 public:  // 用于写typedef或者静态常量等。
     static const int kMemBlockSize = 4 * 1024 * 1024;  // 内存块的大小，是4M。
     static const int kLogFilePathLength = 256;  // 日志文件夹路径的最长长度。
-    static const int kMaxInterval_ = 3;  // 条件变量等待的最长时间。
+    static const int kMaxInterval_ = 1;  // 条件变量等待的最长时间。
     const char *kLogDirPath = "/Other/Log\0";  // 日志文件夹的路径位置。
     const char *kLogThreadName = "Log\0";  // 开启日志异步功能的时候，日志线程的名字。
     typedef FixedMemBlock<kMemBlockSize> Buffer;

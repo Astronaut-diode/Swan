@@ -9,7 +9,7 @@
             try{
                 socket=new WebSocket('ws://localhost:8081');
             }catch(e){
-                alert('error1');
+                console.log('error1');
                 return;
             }
             socket.onopen = sOpen;
@@ -18,26 +18,26 @@
             socket.onclose= sClose;
         }
         function sOpen(){
-            alert('connect success!');
+            console.log('connect success!');
         }
         var b;
         function sError(e){
             b = e;
-            alert("error " + e);
+            console.log("error " + e);
         }
         var m;
         function sMessage(msg){
             m = msg;
             console.log(m);
-            alert('server says:' + msg.data + "调用了append方法");
+            console.log('server says:' + msg.data + "调用了append方法");
             append(msg.data);
         }
         function sClose(e){
-            alert("connect closed2:" + e.code);
+            console.log("connect closed2:" + e.code);
         }
         function Send(){
             socket.send(document.getElementById("msg").value);
-            alert("我已经发送了消息");
+            console.log("我已经发送了消息");
         }
         function Close(){
             socket.close();

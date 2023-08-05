@@ -33,7 +33,7 @@ struct WeakTcpConnection {
 
 class TaskScheduler {
 public:  // 用于写typedef或者静态常量等。
-    static const int kLen = 60 * 60;  // 代表长时间不操作被踢出时间轮的值。
+    static const int kLen = 1 * 60;  // 代表长时间不操作被踢出时间轮的值。
     const char *kTimerThreadName = "Timer\0";  // 开启定时器异步功能的时候，定时器线程的名字。
     typedef std::shared_ptr<WeakTcpConnection> sharedWeakTcpConnection;
     typedef std::unordered_set<sharedWeakTcpConnection> Bucket;

@@ -55,7 +55,6 @@ void TcpServer::distributeConnection(int connectionFd) {
     conn->setInsertTimerWheel(insertToTimeWheelCallBack_);
     conn->setUpdateTimerWheel(updateToTimeWheelCallBack_);
     monitors_[target]->poller_.updateEpollEvents(EPOLL_CTL_ADD, conn->getChannel());  // 让对应的monitor开始监听该连接。
-    insertToTimeWheelCallBack_(conn);  // 不仅将shared_ptr<TcpConnection>插入vector中，还插入到了时间轮之中。
 }
 
 void TcpServer::deleteConnection(int connectionFd) {

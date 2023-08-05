@@ -52,7 +52,7 @@ void TcpConnection::handleRead() {
         connectionChannel_->enableRead();
         connectionChannel_->enableOneShot();
         monitor_->poller_.updateEpollEvents(EPOLL_CTL_MOD, connectionChannel_);  // 因为是oneshot所以需要重新监听。
-        insertToTimeWheelCallBack_(shared_from_this());
+        updateToTimeWheelCallBack_(shared_from_this());
         return;
     }
     if (request_->receiveHTTPRequest()) {  // 如果连接建立成功，那就改变状态。
@@ -91,11 +91,11 @@ void TcpConnection::setUpdateTimerWheel(UpdateToTimeWheelCallBack updateToTimeWh
  * 设置时间轮对应的上下文信息。
  * @param weakTcpConnection
  */
-void TcpConnection::setContext(const std::shared_ptr<WeakTcpConnection> &weakTcpConnection) {
+void TcpConnection::setContext(const std::weak_ptr<WeakTcpConnection> &weakTcpConnection) {
     context_ = weakTcpConnection;
 }
 
-const std::shared_ptr<WeakTcpConnection> &TcpConnection::getContext() {
+const std::weak_ptr<WeakTcpConnection> &TcpConnection::getContext() {
     return context_;
 }
 

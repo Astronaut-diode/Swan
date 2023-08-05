@@ -39,7 +39,7 @@ private:  // 变量区域
     char serverKey_[20];
 
 public:
-    std::shared_ptr<WeakTcpConnection> context_;  // 用于响应时间轮的上下文环境。
+    std::weak_ptr<WeakTcpConnection> context_;  // 用于响应时间轮的上下文环境。
 
 private:  // 函数区域
     std::shared_ptr<TcpConnection> getSharedPtr();
@@ -68,9 +68,9 @@ public:
 
     void setUpdateTimerWheel(UpdateToTimeWheelCallBack updateToTimeWheelCallBack);
 
-    void setContext(const std::shared_ptr<WeakTcpConnection> &weakTcpConnection);  // 设置时间轮对应的信息
+    void setContext(const std::weak_ptr<WeakTcpConnection> &weakTcpConnection);  // 设置时间轮对应的信息
 
-    const std::shared_ptr<WeakTcpConnection> &getContext();  // 获取对应的时间轮上下文信息。
+    const std::weak_ptr<WeakTcpConnection> &getContext();  // 获取对应的时间轮上下文信息。
 };
 
 #endif //SWAN_TCPCONNECTION_H
