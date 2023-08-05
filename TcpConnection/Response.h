@@ -13,6 +13,8 @@
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <sys/syscall.h>
+#include <cstring>
+#include <sys/socket.h>
 #include "../Logger/LogStream.h"
 
 class Response {
@@ -62,7 +64,9 @@ public:
 
     void establishWebSocketConnection();  // 建立WebSocket连接。
 
+    void sendWebSocketResponseBuffer(int status, const std::string &message);  // 构建wbeSocket返回的信息。
 
+    std::string createTagMessage(const std::string &tag, const std::string &content);  // 构建目标标签。
 };
 
 #endif //SWAN_RESPONSE_H

@@ -1,55 +1,92 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
     <title>websocket test</title>
     <script>
         var socket;
-        function Connect(){
-            try{
-                socket=new WebSocket('ws://localhost:8081');
-            }catch(e){
-                console.log('error1');
+
+        function Connect() {
+            try {
+                socket = new WebSocket('ws://localhost:8081');
+            } catch (e) {
+                console.log("连接出现error:" + e);
                 return;
             }
             socket.onopen = sOpen;
             socket.onerror = sError;
-            socket.onmessage= sMessage;
-            socket.onclose= sClose;
+            socket.onmessage = sMessage;
+            socket.onclose = sClose;
         }
-        function sOpen(){
-            console.log('connect success!');
+
+        function sOpen() {
+            console.log("连接建立成功");
         }
+
         var b;
-        function sError(e){
+
+        function sError(e) {
             b = e;
-            console.log("error " + e);
+            console.log("error:" + e);
         }
-        var m;
-        function sMessage(msg){
-            m = msg;
-            console.log(m);
-            console.log('server says:' + msg.data + "调用了append方法");
-            append(msg.data);
-        }
-        function sClose(e){
+
+        function sClose(e) {
             console.log("connect closed2:" + e.code);
         }
-        function Send(){
+
+        function Send() {
             socket.send(document.getElementById("msg").value);
-            console.log("我已经发送了消息");
         }
-        function Close(){
+
+        function Close() {
             socket.close();
+        }
+
+        // -------------------------------------------------------------------------------------------------------------------------
+
+        function createTag(tagName, content) {  // 创建标签。
+            return `<${tagName}>${content}</${tagName}>`;
+        }
+
+        function extractTagContent(input, tagName) {  // 从标签中提取内容。
+            const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 'g');
+            const matches = input.match(regex);
+
+            if (matches) {
+                const contents = matches.map(match => {
+                    const content = match.match(/<.*?>(.*?)<\/.*?>/)[1];
+                    return content;
+                });
+                return contents;
+            } else {
+                return [];
+            }
+        }
+
+        function append(content) {
+            var dynamic_body = document.getElementById("dynamic_body");
+            var new_row = document.createElement("tr");
+            var name_cell = document.createElement("td");
+            name_cell.textContent = content;
+            new_row.appendChild(name_cell);
+            dynamic_body.appendChild(new_row);
         }
     </script>
 </head>
 
 <body>
+
 <input id="msg" type="text">
 <button id="connect" onclick="Connect();">Connect</button>
 <button id="send" onclick="Send();">Send</button>
 <button id="close" onclick="Close();">Close</button>
+
+<div>
+    <input id="username" type="text">
+    <input id="password" type="password">
+    <button id="register" onclick="register();">注册</button>
+    <button id="login" onclick="login();">注册</button>
+</div>
 
 
 <table border="1px" style="width: 640px;text-align: center; margin: auto; table-layout: fixed;">
@@ -66,13 +103,33 @@
 
 </html>
 <script>
-    function append(content) {
-        var dynamic_body = document.getElementById("dynamic_body");
-        var new_row = document.createElement("tr");
-        var name_cell = document.createElement("td");
-        name_cell.textContent = content;
-        new_row.appendChild(name_cell);
-        dynamic_body.appendChild(new_row);
+
+    function sMessage(msg) {  // 接收来自服务器端的信息。
+        var content = msg.data;
+        var status = extractTagContent(content, "status");
+        if(status == 201) {
+            alert(extractTagContent(content, "message"));
+        } else {
+            alert("注册失败");
+        }
     }
 
+
+    function register() {  // 发送注册请求。
+        var username = document.getElementById("username").value,
+            password = document.getElementById("password").value;
+        if (username.length === 0 || password.length === 0) {
+            alert("请输入用户名和密码");
+            return;
+        }
+        var context = "";
+        context += createTag("url", "/register");
+        context += createTag("username", username);
+        context += createTag("password", password);
+        socket.send(context);
+    }
+
+    function login() {  // 发送登录请求。
+
+    }
 </script>

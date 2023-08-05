@@ -24,6 +24,7 @@ void Request::reset() {
     payload_length_ = 0;
     memset(payload_, 0, sizeof(payload_));
     memset(serverKey_, 0, sizeof(serverKey_));
+    memset(url_, 0, sizeof(url_));
 }
 
 /**
@@ -101,32 +102,6 @@ void Request::parseStr(char *request) {
     strcat(request, "Upgrade: websocket\r\n\r\n");
 }
 
-/**
- * 接收来自WebSocket的信息。
- */
-void Request::receiveWebSocketRequest() {
-    int readCount = 0;
-    while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
-    fetch_websocket_info(buffer_);
-    printf("WEBSOCKET PROTOCOL\n"
-           "FIN: %d\n"
-           "OPCODE: %d\n"
-           "MASK: %d\n"
-           "PAYLOADLEN: %d\n"
-           "PAYLOAD: %s",
-           fin_, opcode_, mask_, payload_length_, payload_);
-    char buffer[1024]{'\0'};
-    buffer[0] = (char) 129;  // fin、rsv和opcode
-    buffer[1] = (char) 5;
-    buffer[2] = 'h';
-    buffer[3] = 'e';
-    buffer[4] = 'l';
-    buffer[5] = 'l';
-    buffer[6] = 'o';
-    std::cout << "发送的内容" << buffer << "长度为" << strlen(buffer) << std::endl;
-    int count = send(clientFd_, buffer, strlen(buffer), 0);
-    std::cout << "发送了" << count << "字节数据" << std::endl;
-}
 
 int Request::fetch_websocket_info(char *msg) {
     int pos = 0;
@@ -192,4 +167,51 @@ int Request::fetch_payload(char *msg, int &pos) {
     }
     pos += payload_length_;
     return 0;
+}
+
+/**
+ * 从发送的信息中找出对应的url请求目标。
+ * @param buffer  原始的内容字符串。
+ * @param tag  等待获取的标签
+ */
+std::string Request::analysisTag(char *buffer, std::string tag) {
+    std::string leftTag = "<" + tag + ">";
+    const char *start = strstr(buffer, leftTag.c_str());  // 因为url一定是第一个标签，所以可以直接先获取第一个>。
+    if (start == nullptr) {  // 代表内容格式不正确。
+        return "Bad";
+    }
+    std::string rightTag = "</" + tag + ">";
+    const char *end = strstr(buffer, rightTag.c_str());  // 找出start右边的第一个<。
+    char content[1024]{'\0'};
+    strncpy(content, start + leftTag.size(), end - start - leftTag.size());
+    return content;
+}
+
+/**
+ * 接收来自WebSocket的信息。
+ */
+void Request::receiveWebSocketRequest() {
+    int readCount = 0;
+    while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
+    fetch_websocket_info(buffer_);
+    char log[1024];
+    snprintf(log, 1024,
+             "WEBSOCKET PROTOCOL  "
+             "FIN: %d  "
+             "OPCODE: %d  "
+             "MASK: %d  "
+             "PAYLOADLEN: %d  "
+             "PAYLOAD: %s",
+             fin_, opcode_, mask_, payload_length_, payload_);
+    LOG << clientFd_ << "接收到的信息" << log << "\n";
+    std::string url = analysisTag(payload_, "url");  // 根据获取的url开始分流处理。
+    memcpy(url_, url.c_str(), url.size());
+    if (strcmp("Bad", url_) == 0) {  // 没有操作。
+
+    } else if (strcmp("/register", url_) == 0) {  // 注册请求。
+        std::string username = analysisTag(payload_, "username");
+        std::string password = analysisTag(payload_, "password");
+        response_->sendWebSocketResponseBuffer(RET_CODE::REGISTER_SUCCESS, "注册成功");
+    }
+    reset();
 }

@@ -15,6 +15,7 @@
 #include "Response.h"
 #include "../Utils/sha1.h"
 #include "../Utils/base64.h"
+
 #define MAGIC_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 typedef std::map<std::string, std::string> HEADER_MAP;
@@ -22,6 +23,9 @@ typedef std::map<std::string, std::string> HEADER_MAP;
 class Request {
 public:  // 用于写typedef或者静态常量等。
     static const int kReadBufferMaxLength = 4 * 1024;
+    enum RET_CODE {
+        REGISTER_SUCCESS = 201,  // 注册成功
+    };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。
     char buffer_[kReadBufferMaxLength];
@@ -36,17 +40,27 @@ private:  // 变量区域
     uint64_t payload_length_;
     char payload_[2048];
 
+
+    char url_[128];  // websocket发起的请求地址。
 public:
     char serverKey_[20];
 private:  // 函数区域
     void reset();
 
     int fetch_fin(char *msg, int &pos);
+
     int fetch_opcode(char *msg, int &pos);
+
     int fetch_mask(char *msg, int &pos);
+
     int fetch_masking_key(char *msg, int &pos);
+
     int fetch_payload_length(char *msg, int &pos);
+
     int fetch_payload(char *msg, int &pos);
+
+    std::string analysisTag(char *buffer, std::string tag);
+
 public:
     Request() {}
 

@@ -4,7 +4,6 @@
 
 #include "Response.h"
 
-#include <cstring>
 
 Response::Response(int clientFd) : clientFd_(clientFd) {
 
@@ -140,4 +139,67 @@ void Response::UpdateIov(int tmp, char *starts[]) {
  */
 void Response::establishWebSocketConnection() {
     write(clientFd_, buffer_, strlen(buffer_));
+}
+
+/**
+ * 构建wbeSocket返回的信息。
+ */
+void Response::sendWebSocketResponseBuffer(int status, const std::string &message) {
+    std::string statusTag = createTagMessage("status", std::to_string(status));
+    std::string bufferTag = createTagMessage("message", message);
+    std::string content = statusTag + bufferTag;
+    // 接下来构建需要返回的请求数据帧。
+    int len = content.size(), frameLength = 1 + 1;
+    long long count;  // frameLength表示要创建的字符串长度，第一个1代表fin(1位)、RSV(3位)、以及opcode（4位)。第二个代表mask+基础的payload(七位)。
+    if (len <= 125) {  // 只用一个字节表示payLoad。
+        frameLength = frameLength + len;
+        count = len;
+    } else if (len < (1 << 16)) {
+        frameLength = frameLength + 2 + len;  // payload的原始七位写为126，然后接收16位的长度内容。
+        count = 126;
+    } else {
+        frameLength = frameLength + 8 + len;
+        count = 127;
+    }
+    char *buffer = new char[frameLength + 1]{'\0'};
+    buffer[0] = (char) (128 + 1);  // 128代表fin，是消息的最后一个分片，1代表是文本帧。
+    buffer[1] = (char) count;
+    int next = 2;
+    if (count == 126) {
+        buffer[2] = (char) (count >> 8);
+        buffer[3] = (char) count;
+        next = 4;
+    } else if (count == 127) {
+        buffer[2] = (char) (count >> 56);
+        buffer[3] = (char) (count >> 48);
+        buffer[4] = (char) (count >> 40);
+        buffer[5] = (char) (count >> 32);
+        buffer[6] = (char) (count >> 24);
+        buffer[7] = (char) (count >> 16);
+        buffer[8] = (char) (count >> 8);
+        buffer[9] = (char) (count);
+        next = 10;
+    }
+    strncpy(buffer + next, content.c_str(), content.size());
+    long long sendCount = 0;
+    while (true) {
+        int sendNumber = send(clientFd_, buffer + sendCount, frameLength - sendCount, 0);
+        if (sendNumber <= 0) {
+            break;
+        }
+        sendCount += sendNumber;
+    }
+    LOG << "向" << clientFd_ << "发送了" << buffer[1] << buffer + 2 << "\n";
+    delete buffer;
+}
+
+/**
+ * 构建目标标签。
+ * @param tag
+ * @param content
+ * @return
+ */
+std::string Response::createTagMessage(const std::string &tag, const std::string &content) {
+    std::string ret = "<" + tag + ">" + content + "</" + tag + ">";
+    return ret;
 }
