@@ -142,12 +142,12 @@ void Response::establishWebSocketConnection() {
 }
 
 /**
- * 构建wbeSocket返回的信息。
+ * 构建wbeSocket返回的信息。tags是附加信息，需要在request中构造好tag直接传入，没有的话默认为空。
  */
-void Response::sendWebSocketResponseBuffer(int status, const std::string &message) {
+void Response::sendWebSocketResponseBuffer(int status, const std::string &message, const std::string &tags) {
     std::string statusTag = createTagMessage("status", std::to_string(status));
     std::string bufferTag = createTagMessage("message", message);
-    std::string content = statusTag + bufferTag;
+    std::string content = statusTag + bufferTag + tags;
     // 接下来构建需要返回的请求数据帧。
     int len = content.size(), frameLength = 1 + 1;
     long long count;  // frameLength表示要创建的字符串长度，第一个1代表fin(1位)、RSV(3位)、以及opcode（4位)。第二个代表mask+基础的payload(七位)。

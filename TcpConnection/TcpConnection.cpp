@@ -48,11 +48,13 @@ void TcpConnection::handleClose() {
  */
 void TcpConnection::handleRead() {
     if (connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
-        request_->receiveWebSocketRequest();
-        connectionChannel_->enableRead();
-        connectionChannel_->enableOneShot();
-        monitor_->poller_.updateEpollEvents(EPOLL_CTL_MOD, connectionChannel_);  // 因为是oneshot所以需要重新监听。
-        updateToTimeWheelCallBack_(shared_from_this());
+        if (monitor_) {
+            request_->receiveWebSocketRequest();
+            connectionChannel_->enableRead();
+            connectionChannel_->enableOneShot();
+            monitor_->poller_.updateEpollEvents(EPOLL_CTL_MOD, connectionChannel_);  // 因为是oneshot所以需要重新监听。
+            updateToTimeWheelCallBack_(shared_from_this());
+        }
         return;
     }
     if (request_->receiveHTTPRequest()) {  // 如果连接建立成功，那就改变状态。

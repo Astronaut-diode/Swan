@@ -170,6 +170,17 @@ int Request::fetch_payload(char *msg, int &pos) {
 }
 
 /**
+ * 构建目标标签。
+ * @param tag
+ * @param content
+ * @return
+ */
+std::string Request::createTagMessage(const std::string &tag, const std::string &content) {
+    std::string ret = "<" + tag + ">" + content + "</" + tag + ">";
+    return ret;
+}
+
+/**
  * 从发送的信息中找出对应的url请求目标。
  * @param buffer  原始的内容字符串。
  * @param tag  等待获取的标签
@@ -209,9 +220,44 @@ void Request::receiveWebSocketRequest() {
     if (strcmp("Bad", url_) == 0) {  // 没有操作。
 
     } else if (strcmp("/register", url_) == 0) {  // 注册请求。
-        std::string username = analysisTag(payload_, "username");
-        std::string password = analysisTag(payload_, "password");
-        response_->sendWebSocketResponseBuffer(RET_CODE::REGISTER_SUCCESS, "注册成功");
+        if(processRegister()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "注册成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "注册失败");
+        }
+    } else if(strcmp("/login", url_) == 0) {
+        int userId = -1;
+        if(processLogin(userId)) {
+            std::string session = Redis::get_singleton_()->SessionExists(userId);
+            std::string tags = createTagMessage("session", session);
+            tags += createTagMessage("userId", std::to_string(userId));
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆成功", tags);
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆失败");
+        }
     }
     reset();
+}
+
+
+/**
+ * 处理注册请求，返回的bool代表注册是否成功。
+ * @return
+ */
+bool Request::processRegister() {
+    std::string username = analysisTag(payload_, "username");
+    std::string password = analysisTag(payload_, "password");
+    bool ret = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->Register(username, password);
+    return ret;
+}
+
+/**
+ * 处理登录请求，返回的bool代表登录是否成功。
+ * @return
+ */
+bool Request::processLogin(int &userId) {
+    std::string username = analysisTag(payload_, "username");
+    std::string password = analysisTag(payload_, "password");
+    bool ret = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->Login(userId, username, password);
+    return ret;
 }

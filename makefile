@@ -3,6 +3,15 @@ FLAG = -g -c
 
 all: Swan
 
+MysqlConnectionPool/MysqlConnectionPool.o: MysqlConnectionPool/MysqlConnectionPool.cpp
+	$(CC) $(FLAG) $^ -o $@
+
+Redis/Redis.o: Redis/Redis.cpp
+	$(CC) $(FLAG) $^ -o $@
+
+Config/Config.o: Config/Config.cpp
+	$(CC) $(FLAG) $^ -o $@
+
 Utils/base64.o: Utils/base64.cpp
 	$(CC) $(FLAG) $^ -o $@
 
@@ -60,7 +69,7 @@ Logger/LogStream.o: Logger/LogStream.cpp
 main.o: main.cpp
 	$(CC) $(FLAG) $^ -o $@
 
-Swan: main.o Logger/LogStream.o Logger/AsyncLog.o Logger/AsyncLog.o Thread/Thread.o Logger/LogFile.o TaskScheduler/TaskScheduler.o TaskScheduler/TimerQueue.o TaskScheduler/Timer.o TcpConnection/TcpConnection.o Poller/Poller.o Channel/Channel.o TcpConnection/Address.o Acceptor/Acceptor.o Monitor/Monitor.o TcpServer/TcpServer.o TcpConnection/Request.o TcpConnection/Response.o Utils/sha1.o Utils/base64.o
+Swan: main.o Logger/LogStream.o Logger/AsyncLog.o Logger/AsyncLog.o Thread/Thread.o Logger/LogFile.o TaskScheduler/TaskScheduler.o TaskScheduler/TimerQueue.o TaskScheduler/Timer.o TcpConnection/TcpConnection.o Poller/Poller.o Channel/Channel.o TcpConnection/Address.o Acceptor/Acceptor.o Monitor/Monitor.o TcpServer/TcpServer.o TcpConnection/Request.o TcpConnection/Response.o Utils/sha1.o Utils/base64.o Config/Config.o MysqlConnectionPool/MysqlConnectionPool.o Redis/Redis.o
 	$(CC) -g $^ -o $@ -lpthread -lmysqlclient -lhiredis
 
 .PHONY:clean

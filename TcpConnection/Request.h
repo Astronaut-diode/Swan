@@ -15,6 +15,8 @@
 #include "Response.h"
 #include "../Utils/sha1.h"
 #include "../Utils/base64.h"
+#include "../MysqlConnectionPool/MysqlConnectionPool.h"
+#include "../Redis/Redis.h"
 
 #define MAGIC_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -24,7 +26,7 @@ class Request {
 public:  // 用于写typedef或者静态常量等。
     static const int kReadBufferMaxLength = 4 * 1024;
     enum RET_CODE {
-        REGISTER_SUCCESS = 201,  // 注册成功
+        SUCCESS = 200,  // 操作成功
     };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。
@@ -61,6 +63,11 @@ private:  // 函数区域
 
     std::string analysisTag(char *buffer, std::string tag);
 
+    std::string createTagMessage(const std::string &tag, const std::string &content);  // 构建目标标签。
+
+    bool processRegister();  // 处理注册请求，返回的bool代表注册是否成功。
+
+    bool processLogin(int &userId);  // 处理登录请求，返回的bool代表登录是否成功。
 public:
     Request() {}
 

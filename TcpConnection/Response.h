@@ -64,7 +64,7 @@ public:
 
     void establishWebSocketConnection();  // 建立WebSocket连接。
 
-    void sendWebSocketResponseBuffer(int status, const std::string &message);  // 构建wbeSocket返回的信息。
+    void sendWebSocketResponseBuffer(int status, const std::string &message, const std::string &tags = "");  // 构建wbeSocket返回的信息。
 
     std::string createTagMessage(const std::string &tag, const std::string &content);  // 构建目标标签。
 };

@@ -63,6 +63,10 @@
             }
         }
 
+        function clear(id) {
+            document.getElementById(id).value = "";
+        }
+
         function append(content) {
             var dynamic_body = document.getElementById("dynamic_body");
             var new_row = document.createElement("tr");
@@ -76,41 +80,51 @@
 
 <body>
 
-<input id="msg" type="text">
-<button id="connect" onclick="Connect();">Connect</button>
-<button id="send" onclick="Send();">Send</button>
-<button id="close" onclick="Close();">Close</button>
-
 <div>
     <input id="username" type="text">
     <input id="password" type="password">
     <button id="register" onclick="register();">注册</button>
-    <button id="login" onclick="login();">注册</button>
+    <button id="login" onclick="login();">登录</button>
 </div>
 
 
-<table border="1px" style="width: 640px;text-align: center; margin: auto; table-layout: fixed;">
-    <thead>
-    <tr>
-        <th>内容</th>
-    </tr>
-    </thead>
-    <tbody id="dynamic_body">
+<!--<table border="1px" style="width: 640px;text-align: center; margin: auto; table-layout: fixed;">-->
+<!--    <thead>-->
+<!--    <tr>-->
+<!--        <th>内容</th>-->
+<!--    </tr>-->
+<!--    </thead>-->
+<!--    <tbody id="dynamic_body">-->
 
-    </tbody>
-</table>
+<!--    </tbody>-->
+<!--</table>-->
+
 </body>
 
 </html>
 <script>
-
+    var session, userId;
+    Connect();  // 每次打开网页或者刷新网页，自动建立websocket连接。
     function sMessage(msg) {  // 接收来自服务器端的信息。
         var content = msg.data;
         var status = extractTagContent(content, "status");
-        if(status == 201) {
-            alert(extractTagContent(content, "message"));
-        } else {
-            alert("注册失败");
+        if (status == 200) {
+            var message = extractTagContent(content, "message");
+            if (message == "注册成功" || message == "注册失败") {  // 清空输入框。
+                clear("username");
+                clear("password");
+                alert(message);
+            } else if(message == "登陆成功" || message == "登陆失败") {
+                clear("username");
+                clear("password");
+                alert(message);
+                if(message == "登陆成功") {
+                    session = extractTagContent(content, "session");
+                    userId = extractTagContent(content, "userId");
+                    console.log("session的内容是" + session);
+                    console.log("userId的内容是" + userId);
+                }
+            }
         }
     }
 
@@ -130,6 +144,16 @@
     }
 
     function login() {  // 发送登录请求。
-
+        var username = document.getElementById("username").value,
+            password = document.getElementById("password").value;
+        if (username.length === 0 || password.length === 0) {
+            alert("请输入用户名和密码");
+            return;
+        }
+        var context = "";
+        context += createTag("url", "/login");
+        context += createTag("username", username);
+        context += createTag("password", password);
+        socket.send(context);
     }
 </script>

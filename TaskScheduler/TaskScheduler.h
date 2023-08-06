@@ -26,6 +26,7 @@ struct WeakTcpConnection {
     ~WeakTcpConnection() {  // 进行析构，将weakPtr的结果转换为shared_ptr，并调用关闭连接的操作。
         std::shared_ptr<TcpConnection> p = weakPtr_.lock();
         if(p) {  // 因为是weak指针，所以原始内容被释放了的话，这里结果就是空，否则就不会是空。
+            LOG << (weakPtr_.lock().get()) << "析构了\n";
             (*p).handleClose();
         }
     }
@@ -33,7 +34,7 @@ struct WeakTcpConnection {
 
 class TaskScheduler {
 public:  // 用于写typedef或者静态常量等。
-    static const int kLen = 1 * 30;  // 代表长时间不操作被踢出时间轮的值。
+    static const int kLen = 1 * 20;  // 代表长时间不操作被踢出时间轮的值。
     const char *kTimerThreadName = "Timer\0";  // 开启定时器异步功能的时候，定时器线程的名字。
     typedef std::shared_ptr<WeakTcpConnection> sharedWeakTcpConnection;
     typedef std::unordered_set<sharedWeakTcpConnection> Bucket;
