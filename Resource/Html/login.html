@@ -2,7 +2,28 @@
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
-    <title>websocket test</title>
+    <title>main</title>
+
+    <style>
+        .container {
+            margin-top: 50px;
+            width: 400px;
+            height: 200px;
+            border: 1px solid #ccc;
+            overflow: auto;
+        }
+
+        .list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .list-item {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+    </style>
+
     <script>
         var socket;
 
@@ -67,6 +88,125 @@
             document.getElementById(id).value = "";
         }
 
+        /**
+         * 显示主体界面。
+         */
+        function showMain() {
+            var removeElement = document.getElementById("loginForm");
+            removeElement.parentElement.removeChild(removeElement);
+            createGroup();
+            createPerson();
+            createRequest();
+            createChat();
+            createMessage();
+        }
+
+        function createGroup() {  // 群组栏
+            // 创建一个新的 div 元素
+            var newDiv = document.createElement("group");
+
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newDiv.innerHTML =
+                `
+                <div class="container" id="groupContainerDiv">
+                  <ul class="list" id="groupContainerUl">
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                  </ul>
+                </div>`;
+            // 获取 body 元素，并将新创建的 div 元素插入到 body 中
+            var bodyElement = document.querySelector("body");
+            bodyElement.appendChild(newDiv);
+        }
+
+        function createPerson() {  // 好友栏
+            // 创建一个新的 div 元素
+            var newDiv = document.createElement("person");
+
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newDiv.innerHTML =
+                `
+                <div class="container" id="personContainerDiv">
+                  <ul class="list" id="personContainerUl">
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                  </ul>
+                </div>`;
+            // 获取 body 元素，并将新创建的 div 元素插入到 body 中
+            var bodyElement = document.querySelector("body");
+            bodyElement.appendChild(newDiv);
+        }
+
+        function createRequest() {  // 请求列
+            // 创建一个新的 div 元素
+            var newDiv = document.createElement("request");
+
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newDiv.innerHTML =
+                `<div class="container" id="requestContainerDiv" style="float:right;margin-top: -453px;">
+                  <ul class="list" id="requestContainerUl">
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                  </ul>
+                </div>`;
+            // 获取 body 元素，并将新创建的 div 元素插入到 body 中
+            var bodyElement = document.querySelector("body");
+            bodyElement.appendChild(newDiv);
+        }
+
+        function createChat() {  // 聊天记录栏
+            // 创建一个新的 div 元素
+            var newDiv = document.createElement("chat");
+
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newDiv.innerHTML =
+                `<div class="container" id="chatContainerDiv" style="height: 550px;float: right;margin-right: 420px;margin-top: -453px;width: 682px;">
+                  <ul class="list" id="chatContainerUl">
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                    <li class="list-item">Item 1</li>
+                  </ul>
+                </div>`;
+            // 获取 body 元素，并将新创建的 div 元素插入到 body 中
+            var bodyElement = document.querySelector("body");
+            bodyElement.appendChild(newDiv);
+        }
+
+        function createMessage() {  // 发送信息栏
+            // 创建一个新的 div 元素
+            var newDiv = document.createElement("message");
+
+
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newDiv.innerHTML = `
+                <input id="addFriendText" type="text" style="float: left;margin-top: -488px;height: 19px;">
+                <button id="addFriendButton" onclick="addFriend();" style="float: left;margin-top: -488px;margin-left: 180px;">添加好友</button>
+                <input id="addGroupText" type="text" style="float: left;margin-top: -587px;margin-left: 260px;height: 19px;">
+                <button id="addGroupButton" onClick="alert('添加群组');" style="float: left;margin-top: -587px;margin-left: 440px;">添加群组</button>
+                <input id="message" style="float: right;margin-right: 500px;margin-top: 30px;width: 600px;height: 30px;">
+                <button id="sendMessageButton" onClick="alert('发送信息');" style="float: right;margin-right: 419px;margin-top: -35px;height: 35px;">发送信息</button>
+            `;
+            // 获取 body 元素，并将新创建的 div 元素插入到 body 中
+            var bodyElement = document.querySelector("body");
+            bodyElement.appendChild(newDiv);
+        }
+
+
         function append(content) {
             var dynamic_body = document.getElementById("dynamic_body");
             var new_row = document.createElement("tr");
@@ -80,7 +220,9 @@
 
 <body>
 
-<div>
+
+
+<div id="loginForm">
     <input id="username" type="text">
     <input id="password" type="password">
     <button id="register" onclick="register();">注册</button>
@@ -123,6 +265,7 @@
                     userId = extractTagContent(content, "userId");
                     console.log("session的内容是" + session);
                     console.log("userId的内容是" + userId);
+                    showMain();
                 }
             }
         }
@@ -154,6 +297,20 @@
         context += createTag("url", "/login");
         context += createTag("username", username);
         context += createTag("password", password);
+        socket.send(context);
+    }
+
+    function addFriend() {
+        var friendId = document.getElementById("addFriendText").value;
+        if (friendId.length === 0 || friendId == userId) {
+            alert("请输入对方的账号");
+            return;
+        }
+        var context = "";
+        context += createTag("url", "/addFriendRequest");  // 发送/addFriendRequest请求，是userId请求添加friendId。
+        context += createTag("session", session);
+        context += createTag("sourceId", userId);
+        context += createTag("destId", friendId);
         socket.send(context);
     }
 </script>

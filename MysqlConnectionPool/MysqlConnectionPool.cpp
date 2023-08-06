@@ -53,8 +53,19 @@ MysqlConnectionPool::~MysqlConnectionPool() {
 bool MysqlConnectionPool::InitTable() {  // 初始化所有可能会使用到的表。
     MYSQL *conn = nullptr;
     if (GetConnection(&conn)) {  // 一开始的时候一定是空闲状态，所以可以初始化表。
-        mysql_query(conn, "create table if not exists user(userid int primary key auto_increment, username varchar(128),password varchar(128));");
-        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        std::string sqls[] = {
+                "create table if not exists user(userId   int primary key auto_increment comment '用户id',username varchar(128) comment '用户账户',password varchar(128) comment '用户密码') comment '用户表';",
+                "create table if not exists `group`(groupId   int primary key auto_increment comment '群的id',groupName varchar(128) comment '群组的名字',masterId  int comment '群主的用户id') comment '群组表';",
+                "create table if not exists friendRelation(friendRelationId int primary key auto_increment comment '一组关系的主键',sourceId         int comment '出发点（好友id）',destId           int comment '目标点',lastReadTime     timestamp comment '最后一次dest_id用户接收source_id(仅仅是用户)信息的时间。') comment '关系表，仅记录好友关系，以及该用户接收该关系发送过来信息的最后一次时间。';",
+                "create table if not exists groupRelation(groupRelationId int primary key auto_increment comment '一组关系的主键',sourceId        int comment '出发点（群组id）',destId          int comment '目标点',lastReadTime    timestamp comment '最后一次dest_id用户接收source_id(仅仅是群组)信息的时间。') comment '关系表，仅记录群组关系以及当前用户接收该群消息的最后一次时间。';",
+                "create table if not exists friendMessage(friendMessageId int primary key auto_increment comment '用户聊天记录的id',sourceId        int comment '发送信息的人',destId          int comment '接收信息的人',content         varchar(1024) comment '发送的信息内容，长度最长是1024bytes',sendTime        timestamp comment '信息的发送时间，用于让目标用户找到未读信息') comment '用户聊天记录表';",
+                "create table if not exists groupMessage(groupMessageId int primary key auto_increment comment '群组聊天记录的id',sourceId       int comment '发送信息的群组',innerSourceId  int comment '发送信息的具体用户的id',content        varchar(1024) comment '发送的信息内容，长度最长是1024bytes',sendTime       timestamp comment '信息的发送时间，用于找到未读信息') comment '群组聊天记录表。';",
+                "create table if not exists friendRequest(friendRequestId int primary key auto_increment comment '请求的id',sourceId        int comment '发送信息的人的id',destId          int comment '接收信息的人的id',processed       bool comment '请求是否已经被处理了。') comment '好友请求表';",
+                "create table if not exists groupRequest(groupRequestId int primary key auto_increment comment '请求的id',sourceId       int comment '发送信息的人的id',destId         int comment '接收信息的人的id',processed      bool comment '请求是否已经被处理了。') comment '群组请求表';"};
+        for (int i = 0; i < 8; ++i) {
+            mysql_query(conn, sqls[i].c_str());
+            assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        }
     }
     ReleaseConnection(conn);  // 使用结束请将资源释放掉。
     return true;
@@ -125,7 +136,7 @@ bool MysqlConnectionPool::Login(int &user_id, const std::string &username, const
         mysql_query(conn, sql);
         MYSQL_RES *res = mysql_store_result(conn);
         ret = mysql_num_rows(res) > 0;  // 判断查询结果是否存在，存在就代表登录成功。
-        while(MYSQL_ROW row = mysql_fetch_row(res)) {
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {
             user_id = atoi(row[0]);
         }
         mysql_free_result(res);  // 及时的释放结果。
@@ -158,7 +169,8 @@ bool MysqlConnectionPool::Register(const std::string &username, const std::strin
             ReleaseConnection(conn);  // 使用结束请将资源释放掉。
             return false;
         }
-        snprintf(sql, 256, "insert into user(username, password) values('%s', '%s');", username.c_str(), password.c_str());
+        snprintf(sql, 256, "insert into user(username, password) values('%s', '%s');", username.c_str(),
+                 password.c_str());
         mysql_query(conn, sql);
         res = mysql_store_result(conn);
         ret = mysql_affected_rows(conn) == 1;
