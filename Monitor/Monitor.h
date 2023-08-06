@@ -13,6 +13,7 @@
 #include "../Channel/Channel.h"
 #include "../Poller/Poller.h"
 #include "../Logger/LogStream.h"
+typedef std::function<bool(int, int, int)> SendCallBack;  // 发送信息
 
 class Monitor {
 public:  // 用于写typedef或者静态常量等。
@@ -24,6 +25,7 @@ public:
     Channel *wakeupChannel_;  // 该文件描述符相关联的channel。
     Poller poller_;  // 该monitor关联的poller。
     char threadName_[kThreadNameLength];  // 线程的名字。
+    std::vector<std::function<bool(int, int, int)>> sendInLoopCallBacks_;  // 所有该Monitor等待发送的信息。
 
 private:  // 函数区域
 
@@ -41,6 +43,8 @@ public:
     void wakeup();  // 唤醒epoll_wait。
 
     void loop();  // 进行loop的死循环操作。
+
+    void addSendInLoopCallBack(SendCallBack sendInLoopCallBack);
 };
 
 #endif //SWAN_MONITOR_H

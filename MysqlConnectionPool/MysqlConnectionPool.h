@@ -48,6 +48,10 @@ public:
     bool Login(int &user_id, const std::string &username, const std::string &password);  // 登录，查看用户名密码是否正确。
 
     bool Register(const std::string &username, const std::string &password);  // 注册，查看用户名是否重名，如果没有重名，直接插入，都成功则返回true。
+
+    bool sendAddFriendRequest(int sourceId, int destId, bool processed);  // 插入好友请求。
+
+    bool processSql(const char *sql);  // 直接执行一条给定的sql语句。
 };
 
 #endif

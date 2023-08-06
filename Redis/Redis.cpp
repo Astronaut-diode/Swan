@@ -122,5 +122,21 @@ void Redis::removeSession(const int &userId) {
         pthread_mutex_lock(&connection_mutex_);  // 即便是取出了连接，那也是一样需要上锁的，因为操作的数据库是同一个。
         redisCommand(context, "HDEL connection %d", userId);
         ReleaseConnection(context);
+        pthread_mutex_unlock(&connection_mutex_);
     }
+}
+
+/**
+ * 向指定的频道推送消息。
+ * @param channelName
+ * @param sourceId
+ * @param destId
+ * @return
+ */
+bool Redis::publish(const std::string &channelName, int sourceId, int destId) {
+    redisContext *context = nullptr;
+    assert(Redis::get_singleton_()->GetConnection(&context));
+    redisCommand(context, "PUBLISH %s %d:%d", channelName.c_str(), sourceId, destId);
+    ReleaseConnection(context);
+    return true;
 }

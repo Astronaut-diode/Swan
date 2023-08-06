@@ -50,13 +50,41 @@ void TcpServer::distributeConnection(int connectionFd) {
     }
     std::shared_ptr<TcpConnection> conn = std::make_shared<TcpConnection>(connectionFd,
                                                                           monitors_[target],
-                                                                          std::bind(&TcpServer::deleteConnection, this, std::placeholders::_1));  // 创建了TcpConnection以及Channel，并且已经设定了关心读事件。
+                                                                          std::bind(&TcpServer::deleteConnection, this,
+                                                                                    std::placeholders::_1));  // 创建了TcpConnection以及Channel，并且已经设定了关心读事件。
     sharedConnections_[connectionFd] = conn;
     conn->setInsertTimerWheel(insertToTimeWheelCallBack_);
     conn->setUpdateTimerWheel(updateToTimeWheelCallBack_);
+    conn->setGetConnectionSessionsCallBack_(std::bind(&TcpServer::getConnectionSessions, this));
     monitors_[target]->poller_.updateEpollEvents(EPOLL_CTL_ADD, conn->getChannel());  // 让对应的monitor开始监听该连接。
 }
 
 void TcpServer::deleteConnection(int connectionFd) {
     sharedConnections_.erase(connectionFd);
+}
+
+/**
+ * 用于传送ConnectionSession,并进行赋值。
+ * @return
+ */
+std::map<int, TcpConnection> &TcpServer::getConnectionSessions() {
+    return connectionSessions_;
+}
+
+/**
+ * 判断当前机器上的用户id是否有目标存在。存在就插入到对应的Monitor的待执行任务列表中，并执行。
+ * @param sourceId 源
+ * @param destId 目标
+ * @param type 是请求还是信息
+ * @return
+ */
+bool TcpServer::sendInLoop(int sourceId, int destId, int type) {
+    if (connectionSessions_.find(destId) != connectionSessions_.end()) {  // 该用户在当前机器上。
+        connectionSessions_[destId].monitor_->addSendInLoopCallBack(std::move(
+                std::bind(&TcpConnection::send, connectionSessions_[destId], sourceId, destId,
+                          type)));  // 本来是要直接发送消息的函数的，但是现在改为插入到monitor的待执行列表中。
+        connectionSessions_[destId].monitor_->wakeup();  // 唤醒目标的monitor，不再epoll_wait。
+        return true;
+    }
+    return false;
 }

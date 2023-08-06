@@ -153,12 +153,7 @@
             newDiv.innerHTML =
                 `<div class="container" id="requestContainerDiv" style="float:right;margin-top: -453px;">
                   <ul class="list" id="requestContainerUl">
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
+
                   </ul>
                 </div>`;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
@@ -190,8 +185,6 @@
         function createMessage() {  // 发送信息栏
             // 创建一个新的 div 元素
             var newDiv = document.createElement("message");
-
-
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML = `
                 <input id="addFriendText" type="text" style="float: left;margin-top: -488px;height: 19px;">
@@ -267,7 +260,25 @@
                     console.log("userId的内容是" + userId);
                     showMain();
                 }
+            } else if(message == "好友添加请求发送成功" || message == "好友添加请求发送成功") {
+                clear("addFriendText");
+                alert(message);
             }
+        } else if (status == 201) {  // 添加好友的请求
+            var sourceId = extractTagContent(content, "sourceId");
+            var destId = extractTagContent(content, "destId");
+            console.log(sourceId + "向" + destId + "申请添加好友" + "我是" + destId);
+            var dynamic_body = document.getElementById("requestContainerUl");
+            var newElement = document.createElement("li");
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newElement.innerHTML =
+                `<li class="list-item">`
+                +
+                sourceId
+                +
+                `<button onclick="receiveAddRequest(` + sourceId + `, 'yes', this);">接受</button>
+                <button onclick="receiveAddRequest(` + sourceId + `,'no', this)">拒绝</button></li>`;
+            dynamic_body.appendChild(newElement);
         }
     }
 
@@ -300,9 +311,12 @@
         socket.send(context);
     }
 
+    /**
+     * 发送添加好友的请求。
+     */
     function addFriend() {
         var friendId = document.getElementById("addFriendText").value;
-        if (friendId.length === 0 || friendId == userId) {
+        if (friendId.length === 0 || friendId === userId) {
             alert("请输入对方的账号");
             return;
         }
@@ -311,6 +325,23 @@
         context += createTag("session", session);
         context += createTag("sourceId", userId);
         context += createTag("destId", friendId);
+        socket.send(context);
+    }
+
+    /**
+     * 当前用户接受来自sourceId的好友请求。
+     * @param sourceId
+     */
+    function receiveAddRequest(sourceId, decision, button) {
+        var context = "";
+        context += createTag("url", "/acceptOrRefuseAddFriendRequest");
+        context += createTag("session", session);
+        context += createTag("sourceId", sourceId);
+        context += createTag("destId", userId);
+        context += createTag("process", decision);
+        // 获取父元素并移除
+        var listItem = button.parentElement;
+        listItem.parentElement.removeChild(listItem);  // 删除待处理的请求。
         socket.send(context);
     }
 </script>

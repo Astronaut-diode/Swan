@@ -41,6 +41,9 @@ void TcpConnection::handleClose() {
     deleteConnectionCallBack_(connectionFd_);
     monitor_ = nullptr;  // 悬空，防止被析构掉。
     Redis::get_singleton_()->removeSession(request_->getUserId());
+    if(getConnectionSessionsCallBack_().find(userId_) != getConnectionSessionsCallBack_().end()) {
+        getConnectionSessionsCallBack_().erase(userId_);  // 删除TcpServer中记录的连接。
+    }
 }
 
 
@@ -50,7 +53,11 @@ void TcpConnection::handleClose() {
 void TcpConnection::handleRead() {
     if (connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
         if (monitor_) {
-            request_->receiveWebSocketRequest();
+            int ret = request_->receiveWebSocketRequest();
+            if (ret != -1) {
+                userId_ = ret;
+                getConnectionSessionsCallBack_().insert(std::make_pair(ret, *this));
+            }
             connectionChannel_->enableRead();
             connectionChannel_->enableOneShot();
             monitor_->poller_.updateEpollEvents(EPOLL_CTL_MOD, connectionChannel_);  // 因为是oneshot所以需要重新监听。
@@ -58,7 +65,8 @@ void TcpConnection::handleRead() {
         }
         return;
     }
-    if (request_->receiveHTTPRequest()) {  // 如果连接建立成功，那就改变状态。
+    bool ret = request_->receiveHTTPRequest();
+    if (ret) {  // 如果连接建立成功，那就改变状态。
         connectionStatement_ = CONNECTION_STATEMENT::WebSocket;
         memset(serverKey_, '\0', sizeof(serverKey_));
         strcpy(serverKey_, request_->serverKey_);
@@ -102,3 +110,16 @@ const std::weak_ptr<WeakTcpConnection> &TcpConnection::getContext() {
     return context_;
 }
 
+void
+TcpConnection::setGetConnectionSessionsCallBack_(getConnectionSessionsCallBackFunction getConnectionSessionsCallBack) {
+    getConnectionSessionsCallBack_ = getConnectionSessionsCallBack;
+}
+
+bool TcpConnection::send(int sourceId, int destId, int type) {
+    // 请求类型是{"friendMessage", "friendRequest", "groupMessage", "groupRequest"}
+    if(type == 1) {  // 是添加好友的请求，告知destId，来自sourceId的好友请求。
+        request_->pushAddFriendRequestMessage(sourceId, destId);
+        return true;
+    }
+    return false;
+}

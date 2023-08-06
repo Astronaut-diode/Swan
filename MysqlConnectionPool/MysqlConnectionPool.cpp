@@ -128,7 +128,7 @@ bool MysqlConnectionPool::ReleaseConnection(MYSQL *conn) {
 bool MysqlConnectionPool::Login(int &user_id, const std::string &username, const std::string &password) {
     bool ret = false;
     MYSQL *conn = nullptr;
-    if (GetConnection(&conn)) {  // 一开始的时候一定是空闲状态，所以可以初始化表。
+    if (GetConnection(&conn)) {
         pthread_mutex_lock(&mysql_pool_mutex_);
         char *sql = new char[256]{'\0'};
         snprintf(sql, 256, "select * from user where username = '%s' and password = '%s';", username.c_str(),
@@ -155,7 +155,7 @@ bool MysqlConnectionPool::Login(int &user_id, const std::string &username, const
 bool MysqlConnectionPool::Register(const std::string &username, const std::string &password) {
     bool ret = false;
     MYSQL *conn = nullptr;
-    if (GetConnection(&conn)) {  // 一开始的时候一定是空闲状态，所以可以初始化表。
+    if (GetConnection(&conn)) {
         pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
         char *sql = new char[256]{'\0'};
         snprintf(sql, 256, "select * from user where username = '%s';", username.c_str());
@@ -184,6 +184,51 @@ bool MysqlConnectionPool::Register(const std::string &username, const std::strin
         assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
         pthread_mutex_unlock(&mysql_pool_mutex_);
         delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
+
+/**
+ * 插入好友请求。
+ */
+bool MysqlConnectionPool::sendAddFriendRequest(int sourceId, int destId, bool processed) {
+    bool ret = false;
+    MYSQL *conn = nullptr;
+    if (GetConnection(&conn)) {
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+        char *sql = new char[256]{'\0'};
+        snprintf(sql, 256, "insert into friendRequest(sourceId, destId, processed) values (%d, %d, %d);", sourceId,
+                 destId, processed);
+        mysql_query(conn, sql);
+        ret = mysql_affected_rows(conn) == 1;
+        if (!ret) {
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            delete[] sql;
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        pthread_mutex_unlock(&mysql_pool_mutex_);
+        delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
+
+/**
+ * 直接执行一条给定的sql语句。
+ * @param sql
+ * @return
+ */
+bool MysqlConnectionPool::processSql(const char *sql) {
+    bool ret = false;
+    MYSQL *conn = nullptr;
+    if (GetConnection(&conn)) {
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+        mysql_query(conn, sql);
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        pthread_mutex_unlock(&mysql_pool_mutex_);
     }
     ReleaseConnection(conn);  // 使用结束请将资源释放掉。
     return ret;

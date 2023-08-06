@@ -20,6 +20,8 @@ struct WeakTcpConnection;
 
 typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> InsertToTimeWheelCallBack;
 typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> UpdateToTimeWheelCallBack;
+typedef std::function<std::map<int, TcpConnection> &()> getConnectionSessionsCallBackFunction;
+
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:  // 用于写typedef或者静态常量等。
@@ -30,15 +32,17 @@ public:  // 用于写typedef或者静态常量等。
 private:  // 变量区域
     int connectionFd_;  // 使用的文件描述符。
     Channel *connectionChannel_;  // 对应的channel。
-    Monitor *monitor_;
     DeleteConnectionCallBack deleteConnectionCallBack_;  // 删除Tcpserver中connections的回调函数。
     Request *request_;  // 该连接对应的request。
     CONNECTION_STATEMENT connectionStatement_;  // 当前连接的状态。
     InsertToTimeWheelCallBack insertToTimeWheelCallBack_;
     InsertToTimeWheelCallBack updateToTimeWheelCallBack_;
-    char serverKey_[20];
+    getConnectionSessionsCallBackFunction getConnectionSessionsCallBack_;  // 获取所有总连接的回调函数。
+    char serverKey_[30];
+    int userId_;
 
 public:
+    Monitor *monitor_;
     std::weak_ptr<WeakTcpConnection> context_;  // 用于响应时间轮的上下文环境。
 
 private:  // 函数区域
@@ -68,9 +72,13 @@ public:
 
     void setUpdateTimerWheel(UpdateToTimeWheelCallBack updateToTimeWheelCallBack);
 
+    void setGetConnectionSessionsCallBack_(getConnectionSessionsCallBackFunction getConnectionSessionsCallBack);
+
     void setContext(const std::weak_ptr<WeakTcpConnection> &weakTcpConnection);  // 设置时间轮对应的信息
 
     const std::weak_ptr<WeakTcpConnection> &getContext();  // 获取对应的时间轮上下文信息。
+
+    bool send(int sourceId, int destId, int type);  // 发送信息
 };
 
 #endif //SWAN_TCPCONNECTION_H

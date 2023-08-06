@@ -6,7 +6,7 @@
 
 
 Response::Response(int clientFd) : clientFd_(clientFd) {
-
+    reset();
 }
 
 void Response::reset() {

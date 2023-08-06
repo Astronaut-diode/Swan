@@ -33,6 +33,7 @@ private:
     Redis();
 
     ~Redis();
+
 public:
     static Redis *get_singleton_();
 
@@ -43,6 +44,8 @@ public:
     std::string SessionExists(const int &userId);  // 判断目标的userId是否有对应的session记录。
 
     void removeSession(const int &userId);  // 关闭用户的连接
+
+    bool publish(const std::string &channelName, int sourceId, int destId);  // 向指定的频道推送消息。
 };
 
 #endif

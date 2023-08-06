@@ -32,6 +32,9 @@ Channel::~Channel() {
 }
 
 void Channel::handleEvent() {  // 当epoll接收到事件的是，分给每个channel自己执行。
+    if(useByPoller_ == 0200) {
+        readFunctionCallBack_();
+    } else
     if (useByPoller_ == 0100) {  // 建立新连接时使用的分支，即acceptorChannel
         readFunctionCallBack_();
     } else if (revents_ & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {

@@ -7,7 +7,7 @@
 
 Request::Request(int clientFd) : clientFd_(clientFd),
                                  response_(std::make_unique<Response>(clientFd_)),
-                                 userId_(-1){
+                                 userId_(-1) {
     reset();
 }
 
@@ -34,6 +34,7 @@ void Request::reset() {
 bool Request::receiveHTTPRequest() {
     int readCount = 0;
     while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
+    LOG << "接收到的HTTP请求" << buffer_;
     if (strstr(buffer_, "/favicon")) {  // 网页图标。
         response_->sendResourceFile(Response::SEND_TYPE::ICON, "/Resource/Img/favicon.ico");
         return false;
@@ -206,8 +207,8 @@ std::string Request::analysisTag(char *buffer, std::string tag) {
 /**
  * 接收来自WebSocket的信息。
  */
-void Request::receiveWebSocketRequest() {
-    int readCount = 0;
+int Request::receiveWebSocketRequest() {
+    int readCount = 0, ret = -1;
     while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
     fetch_websocket_info(buffer_);
     char log[1024];
@@ -225,25 +226,39 @@ void Request::receiveWebSocketRequest() {
     if (strcmp("Bad", url_) == 0) {  // 没有操作。
 
     } else if (strcmp("/register", url_) == 0) {  // 注册请求。
-        if(processRegister()) {
+        if (processRegister()) {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "注册成功");
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "注册失败");
         }
-    } else if(strcmp("/login", url_) == 0) {
+    } else if (strcmp("/login", url_) == 0) {
         int userId = -1;
-        if(processLogin(userId)) {
+        if (processLogin(userId)) {
             std::string session = Redis::get_singleton_()->SessionExists(userId);
             std::string tags = createTagMessage("session", session);
             tags += createTagMessage("userId", std::to_string(userId));
             userId_ = userId;
+            ret = userId_;  // 代表当前是登陆成功的请求。
             session_ = session;
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆成功", tags);
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆失败");
         }
+    } else if (strcmp("/addFriendRequest", url_) == 0) {
+        if (processAddFriendRequest()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友添加请求发送成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友添加请求发送失败");
+        }
+    } else if(strcmp("/acceptOrRefuseAddFriendRequest", url_) == 0) {
+        if(acceptOrRefuseAddFriendRequest()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友请求处理成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友请求处理失败");
+        }
     }
     reset();
+    return ret;
 }
 
 
@@ -267,4 +282,67 @@ bool Request::processLogin(int &userId) {
     std::string password = analysisTag(payload_, "password");
     bool ret = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->Login(userId, username, password);
     return ret;
+}
+
+/**
+ * 发送添加好友请求。
+ * @param userId
+ * @return
+ */
+bool Request::processAddFriendRequest() {
+    std::string sourceId = analysisTag(payload_, "sourceId");
+    std::string destId = analysisTag(payload_, "destId");
+    std::string session = analysisTag(payload_, "session");
+    if (session == session_ && stoi(sourceId) == userId_) {
+        MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddFriendRequest(stoi(sourceId),
+                                                                                                   stoi(destId),
+                                                                                                   false);
+        Redis::get_singleton_()->publish("friendRequest", stoi(sourceId), stoi(destId));
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 推送添加好友的信息。
+ * @param sourceId
+ * @param destId
+ * @return
+ */
+bool Request::pushAddFriendRequestMessage(int sourceId, int destId) {
+    std::string tags = createTagMessage("sourceId", std::to_string(sourceId));
+    tags += createTagMessage("destId", std::to_string(destId));
+    response_->sendWebSocketResponseBuffer(RET_CODE::ADD_FRIEND_REQUEST, "新的好友申请", tags);
+    return true;
+}
+
+/**
+ * 接受或拒绝好友请求。
+ * @return
+ */
+bool Request::acceptOrRefuseAddFriendRequest() {
+    std::string sourceId = analysisTag(payload_, "sourceId");
+    std::string destId = analysisTag(payload_, "destId");
+    std::string session = analysisTag(payload_, "session");
+    std::string process = analysisTag(payload_, "process");  // 代表是否同意，yes或no
+    if (session == session_ && stoi(destId) == userId_) {
+        char *sql = new char[256];
+        snprintf(sql, 256, "update friendRequest set processed = true where sourceId = %d and destId = %d;",
+                 stoi(sourceId),
+                 stoi(destId));
+        MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+        if(process == "yes") {
+            snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
+                     stoi(sourceId),
+                     stoi(destId));
+            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
+                     stoi(destId),
+                     stoi(sourceId));
+            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+        }
+        delete [] sql;
+        return true;
+    }
+    return false;
 }

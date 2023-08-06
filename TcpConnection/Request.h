@@ -27,6 +27,7 @@ public:  // 用于写typedef或者静态常量等。
     static const int kReadBufferMaxLength = 4 * 1024;
     enum RET_CODE {
         SUCCESS = 200,  // 操作成功
+        ADD_FRIEND_REQUEST = 201,  // 添加好友的请求。
     };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。
@@ -47,7 +48,7 @@ private:  // 变量区域
     int userId_;  // 用户的id。
     std::string session_;  // 对应的session。
 public:
-    char serverKey_[20];
+    char serverKey_[30];
 private:  // 函数区域
     void reset();
 
@@ -70,6 +71,7 @@ private:  // 函数区域
     bool processRegister();  // 处理注册请求，返回的bool代表注册是否成功。
 
     bool processLogin(int &userId);  // 处理登录请求，返回的bool代表登录是否成功。
+    bool processAddFriendRequest();  // 处理发送添加请求，返回的bool代表请求是否发送成功。
 public:
     Request() {}
 
@@ -85,11 +87,15 @@ public:
 
     void parseStr(char *request);  // 构造需要返回的内容。
 
-    void receiveWebSocketRequest();  // 接收来自WebSocket的信息。
+    int receiveWebSocketRequest();  // 接收来自WebSocket的信息。
 
     int fetch_websocket_info(char *msg);  // 分析信息
 
     int getUserId();
+
+    bool pushAddFriendRequestMessage(int sourceId, int destId);  // 推送添加好友的信息。
+
+    bool acceptOrRefuseAddFriendRequest();  // 接受或拒绝好友请求。
 };
 
 #endif //SWAN_REQUEST_H
