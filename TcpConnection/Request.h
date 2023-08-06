@@ -44,6 +44,8 @@ private:  // 变量区域
 
 
     char url_[128];  // websocket发起的请求地址。
+    int userId_;  // 用户的id。
+    std::string session_;  // 对应的session。
 public:
     char serverKey_[20];
 private:  // 函数区域
@@ -86,6 +88,8 @@ public:
     void receiveWebSocketRequest();  // 接收来自WebSocket的信息。
 
     int fetch_websocket_info(char *msg);  // 分析信息
+
+    int getUserId();
 };
 
 #endif //SWAN_REQUEST_H

@@ -108,3 +108,19 @@ std::string Redis::SessionExists(const int &userId) {
         return result;
     }
 }
+
+
+/**
+ * 关闭用户的连接，删除对应的session
+ * @param userid
+ * @return
+ */
+void Redis::removeSession(const int &userId) {
+    if(userId != -1) {
+        redisContext *context = nullptr;
+        assert(Redis::get_singleton_()->GetConnection(&context));
+        pthread_mutex_lock(&connection_mutex_);  // 即便是取出了连接，那也是一样需要上锁的，因为操作的数据库是同一个。
+        redisCommand(context, "HDEL connection %d", userId);
+        ReleaseConnection(context);
+    }
+}

@@ -6,7 +6,8 @@
 #include "Request.h"
 
 Request::Request(int clientFd) : clientFd_(clientFd),
-                                 response_(std::make_unique<Response>(clientFd_)) {
+                                 response_(std::make_unique<Response>(clientFd_)),
+                                 userId_(-1){
     reset();
 }
 
@@ -169,6 +170,10 @@ int Request::fetch_payload(char *msg, int &pos) {
     return 0;
 }
 
+int Request::getUserId() {
+    return userId_;
+}
+
 /**
  * 构建目标标签。
  * @param tag
@@ -231,6 +236,8 @@ void Request::receiveWebSocketRequest() {
             std::string session = Redis::get_singleton_()->SessionExists(userId);
             std::string tags = createTagMessage("session", session);
             tags += createTagMessage("userId", std::to_string(userId));
+            userId_ = userId;
+            session_ = session;
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆成功", tags);
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆失败");

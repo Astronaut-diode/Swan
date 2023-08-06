@@ -42,6 +42,7 @@ public:
 
     std::string SessionExists(const int &userId);  // 判断目标的userId是否有对应的session记录。
 
+    void removeSession(const int &userId);  // 关闭用户的连接
 };
 
 #endif

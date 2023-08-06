@@ -40,6 +40,7 @@ void TcpConnection::handleClose() {
     close(connectionFd_);
     deleteConnectionCallBack_(connectionFd_);
     monitor_ = nullptr;  // 悬空，防止被析构掉。
+    Redis::get_singleton_()->removeSession(request_->getUserId());
 }
 
 
