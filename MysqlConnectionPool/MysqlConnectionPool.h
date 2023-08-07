@@ -66,6 +66,10 @@ public:
     std::vector<std::pair<int, std::string>> findAllWaitProcessFriendRequest(int userId);  // 找到userId的所有待处理好友请求。
 
     std::vector<std::vector<std::string>> findAllWaitProcessGroupRequest(int userId);  // 找到userId的所有待处理群请求。
+
+    std::vector<std::vector<std::string>> findAllUnreadFriendMessage(int sourceId, int destId);  // 找到(sourceId, destId)所有未读取的内容。
+
+    int findAllUnreadFriendMessageCount(int sourceId, int destId);  // 查询(sourceId, destId)有多少条未读取的内容，只要数量。
 };
 
 #endif

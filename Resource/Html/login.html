@@ -29,7 +29,7 @@
 
         function Connect() {
             try {
-                socket = new WebSocket('ws://192.168.4.171:8081');
+                socket = new WebSocket('ws://10.12.44.139:8081');
             } catch (e) {
                 console.log("连接出现error:" + e);
                 return;
@@ -86,6 +86,19 @@
 
         function clear(id) {
             document.getElementById(id).value = "";
+        }
+
+        /**
+         * 删除id下所有的子标签。
+         * @param id
+         */
+        function removeAllChild(id) {
+            // 获取 ul 元素
+            var ulElement = document.getElementById(id);
+            // 删除所有子元素
+            while (ulElement.firstChild) {
+                ulElement.removeChild(ulElement.firstChild);
+            }
         }
 
         /**
@@ -157,7 +170,7 @@
 
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML =
-                `<div class="container" id="chatContainerDiv" style="height: 550px;float: right;margin-right: 420px;margin-top: -453px;width: 682px;">
+                `<div class="container" id="chatContainerDiv" style="overflow:auto; height: 550px;float: right;margin-right: 420px;margin-top: -453px;width: 682px;">
                   <ul class="list" id="chatContainerUl">
                     <li class="list-item">Item 1</li>
                     <li class="list-item">Item 1</li>
@@ -184,7 +197,7 @@
                 <input id="createGroupText" type="text" style="float: left;margin-top: -587px;margin-left: 518px;height: 19px;">
                 <button id="createGroupButton" onclick="createGroupByName();" style="float: left;margin-top: -587px;margin-left: 704px;">创建群组</button>
                 <input id="message" style="float: right;margin-right: 500px;margin-top: 30px;width: 600px;height: 30px;">
-                <button id="sendMessageButton" onClick="alert('发送信息');" style="float: right;margin-right: 419px;margin-top: -35px;height: 35px;">发送信息</button>
+                <button id="sendMessageButton" onclick="sendMessage();" style="float: right;margin-right: 419px;margin-top: -35px;height: 35px;">发送信息</button>
             `;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
             var bodyElement = document.querySelector("body");
@@ -231,6 +244,8 @@
 <script>
     var session, userId;
     var friendIds = new Set(), groupIds = new Set(), friendRequestIds = new Set(), groupRequestIds = new Set();
+    var chatId = -1, isGroup = false, chatMemoIds = new Set();  // 当前和谁进行聊天，是群还是用户。
+
     Connect();  // 每次打开网页或者刷新网页，自动建立websocket连接。
     function sMessage(msg) {  // 接收来自服务器端的信息。
         var content = msg.data;
@@ -240,8 +255,8 @@
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "friend" + i)[0];
                 var parts = innerContent.split(':');
-                var num = parts[0], text = parts[1];
-                if(friendIds.has(num)) {  // 已经存在了，就直接略过。
+                var num = parts[0], text = parts[1], unreadCount = parts[2];
+                if (friendIds.has(num)) {  // 已经存在了，就直接略过。
                     continue;
                 }
                 friendIds.add(num);  // 记录所有好友的名单。
@@ -250,9 +265,9 @@
                 var newElement = document.createElement("li");
                 // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
                 newElement.innerHTML =
-                    `<li class="list-item" onclick="alert(` + num + `);">`
+                    `<li class="list-item" onclick="chatWithFriend(` + num + `, this);">`
                     +
-                    num + "   " + text
+                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
                 dynamic_body.appendChild(newElement);
@@ -263,7 +278,7 @@
                 var innerContent = extractTagContent(content, "group" + i)[0];
                 var parts = innerContent.split(':');
                 var num = parts[0], text = parts[1];
-                if(groupIds.has(num)) {  // 已经存在的就直接略过。
+                if (groupIds.has(num)) {  // 已经存在的就直接略过。
                     continue;
                 }
                 groupIds.add(num);  // 记录所有群组的名单。
@@ -272,13 +287,39 @@
                 var newElement = document.createElement("li");
                 // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
                 newElement.innerHTML =
-                    `<li class="list-item" onclick="alert(` + num + `);">`
+                    `<li class="list-item" onclick="chatWithGroup(` + num + `);">`
                     +
                     num + "   " + text
                     +
                     `</li>`;
                 dynamic_body.appendChild(newElement);
             }
+        } else if (status == 103) {  // 刷新聊天记录为好友之间聊天记录。
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "friendChat" + i)[0];
+                var parts = innerContent.split('$:$');
+                var memoId = parts[0], sourceId = parts[1], sourceName = parts[2], message = parts[3], time = parts[4];
+                if (chatMemoIds.has(memoId)) {  // 已经存在的就直接略过。
+                    continue;
+                }
+                chatMemoIds.add(memoId);
+
+                var dynamic_body = document.getElementById("chatContainerUl");
+                var newElement = document.createElement("li");
+                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+                newElement.innerHTML =
+                    `<li class="list-item">`
+                    +
+                    '[' + time + ']' + sourceName + "===>" + message
+                    +
+                    `</li>`;
+                dynamic_body.appendChild(newElement);
+            }
+            var container = document.getElementById("chatContainerDiv");
+            container.scrollTop = container.scrollHeight;
+            container = document.getElementById("chatContainerUl");
+            container.scrollTop = container.scrollHeight;
         } else if (status == 200) {
             var message = extractTagContent(content, "message");
             if (message == "注册成功" || message == "注册失败") {  // 清空输入框。
@@ -306,7 +347,7 @@
                 var innerContent = extractTagContent(content, "friendRequest" + i)[0];
                 var parts = innerContent.split(':');
                 var num = parts[0], text = parts[1];
-                if(friendRequestIds.has(num)) {  // 已经存在了，就直接略过。
+                if (friendRequestIds.has(num)) {  // 已经存在了，就直接略过。
                     continue;
                 }
                 friendRequestIds.add(num);  // 记录所有好友的名单。
@@ -329,7 +370,7 @@
                 console.log(innerContent);
                 var parts = innerContent.split(':');
                 var sourceId = parts[1], sourceName = parts[0], destId = parts[2], destName = parts[3];
-                if(groupRequestIds.has(sourceId)) {  // 已经存在了，就直接略过。
+                if (groupRequestIds.has(sourceId)) {  // 已经存在了，就直接略过。
                     continue;
                 }
                 groupRequestIds.add(sourceId);  // 记录所有想要添加群聊的用户id。
@@ -349,6 +390,30 @@
             clear("createGroupText");
             var message = extractTagContent(content, "message");
             console.log(message);
+        } else if(status == 401) {  // 强制更新前端好友列表。
+            friendIds.clear();
+            removeAllChild("personContainerUl");
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "friend" + i)[0];
+                var parts = innerContent.split(':');
+                var num = parts[0], text = parts[1], unreadCount = parts[2];
+                if (friendIds.has(num)) {  // 已经存在了，就直接略过。
+                    continue;
+                }
+                friendIds.add(num);  // 记录所有好友的名单。
+
+                var dynamic_body = document.getElementById("personContainerUl");
+                var newElement = document.createElement("li");
+                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+                newElement.innerHTML =
+                    `<li class="list-item" onclick="chatWithFriend(` + num + `, this);">`
+                    +
+                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
+                    +
+                    `</li>`;
+                dynamic_body.appendChild(newElement);
+            }
         }
     }
 
@@ -479,6 +544,72 @@
         var listItem = button.parentElement;
         listItem.parentElement.removeChild(listItem);  // 删除待处理的请求。
         groupRequestIds.delete(sourceId.toString());  // 请求已经处理掉了，避免下次进不来,需要删除掉。
+        socket.send(context);
+    }
+
+    /**
+     * 切换为和friend聊天。
+     * @param sourceId
+     */
+    function chatWithFriend(sourceId, li) {
+        var context = "";
+        context += createTag("url", "/chatWithFriend");
+        context += createTag("session", session);
+        context += createTag("sourceId", sourceId);  // 对方id
+        context += createTag("destId", userId);  // 我的id
+        if (chatId != sourceId) {  // 界面上清空列表，并清楚set
+            removeAllChild("chatContainerUl");
+            chatMemoIds.clear();
+            friendIds.delete(sourceId.toString());
+            // 获取父元素并移除
+            var listItem = li.parentElement;
+            listItem.removeChild(li);  // 删除待处理的请求。
+        }
+        chatId = sourceId;
+        isGroup = false;
+        socket.send(context);
+    }
+
+    /**
+     * 切换为和group聊天。
+     * @param groupId
+     */
+    function chatWithGroup(groupId) {
+        var context = "";
+        context += createTag("url", "/chatWithGroup");
+        context += createTag("session", session);
+        context += createTag("groupId", groupId);  // 对方id
+        context += createTag("destId", userId);  // 我的id
+        if (chatId != groupId) {  // 界面上清空列表，并清楚set
+            removeAllChild("chatContainerUl");
+            chatMemoIds.clear();
+        }
+        chatId = groupId;
+        isGroup = true;
+        socket.send(context);
+    }
+
+    /**
+     * 发送消息
+     */
+    function sendMessage() {
+        var message = document.getElementById("message").value;
+        clear("message");
+        if (message.length === 0) {
+            alert("请输入消息");
+            return;
+        }
+        if(chatId == -1) {
+            alert("清选择聊天对象！");
+            return;
+        }
+        var context = "";
+        context += createTag("url", "/sendMessage");  // 发送/sendMessage
+        context += createTag("session", session);
+        context += createTag("sourceId", userId);
+        context += createTag("destId", chatId);
+        context += createTag("isGroup", isGroup);
+        context += createTag("message", message);
         socket.send(context);
     }
 </script>

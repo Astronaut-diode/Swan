@@ -190,7 +190,7 @@ void Response::sendWebSocketResponseBuffer(int status, const std::string &messag
         sendCount += sendNumber;
     }
     LOG << "向" << clientFd_ << "发送了" << buffer[1] << buffer + 2 << "\n";
-    delete buffer;
+    delete [] buffer;
 }
 
 /**

@@ -8,6 +8,8 @@
 Request::Request(int clientFd) : clientFd_(clientFd),
                                  response_(std::make_unique<Response>(clientFd_)),
                                  userId_(-1) {
+    chatId_ = -1;
+    isGroup_ = false;
     reset();
 }
 
@@ -273,11 +275,23 @@ int Request::receiveWebSocketRequest() {
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求发送失败");
         }
-    } else if(strcmp("/receiveAddGroupRequest", url_) == 0) {
+    } else if (strcmp("/receiveAddGroupRequest", url_) == 0) {
         if (acceptOrRefuseAddGroupRequest()) {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求处理成功");
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求处理失败");
+        }
+    } else if (strcmp("/chatWithFriend", url_) == 0) {
+        if (chatWithFriend()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友聊天列表切换成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友聊天列表切换失败");
+        }
+    } else if (strcmp("/sendMessage", url_) == 0) {
+        if (sendMessage()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "信息发送成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "信息发送失败");
         }
     }
     reset();
@@ -380,15 +394,19 @@ bool Request::acceptOrRefuseAddFriendRequest() {
 }
 
 /**
- * 推送所有好友的名单。
+ * 推送所有好友的名单（不强制修改前端版本）。
  */
 void Request::sendAllFriends() {
     std::vector<std::pair<int, std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllFriendsId(
             userId_);
     std::string tags;
     for (int i = 0; i < ids.size(); ++i) {
+        // 进行额外查询，看看他给我发了多少消息还没看。
+        int count = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadFriendMessageCount(
+                ids[i].first, userId_);
         tags += createTagMessage("friend" + std::to_string(i), std::to_string(ids[i].first) + ":" +
-                                                               ids[i].second);  // 好友信息的格式friend[0->n - 1]是tag，信息是id:name
+                                                               ids[i].second + ":" + std::to_string(
+                count));  // 好友信息的格式friend[0->n - 1]是tag，信息是id:name:未读消息数量。
     }
     tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个好友。
     response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_LIST, "好友列表", tags);
@@ -493,4 +511,92 @@ bool Request::acceptOrRefuseAddGroupRequest() {
         return true;
     }
     return false;
+}
+
+/**
+ * 切换聊天状态为好友聊天状态。
+ * @return
+ */
+bool Request::chatWithFriend() {
+    std::string sourceId = analysisTag(payload_, "sourceId");  // 对方
+    chatId_ = stoi(sourceId);
+    std::string destId = analysisTag(payload_, "destId");  // 我
+    std::string session = analysisTag(payload_, "session");
+    if (session == session_ && stoi(destId) == userId_) {
+        // 按照(对方,我)找出最后的读取时间，然后取出所有大于这个时间的信息，取出每一个结果。分别是聊天记录id，请求者id，请求者name,信息内容，时间。
+        std::vector<std::vector<std::string>> memo = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadFriendMessage(
+                stoi(sourceId), stoi(destId));  // 聊天记录。
+        sendAllFriends();  // 发送好友名单(可以改变未读消息数量。)
+        std::string tags;
+        for (int i = 0; i < memo.size(); ++i) {
+            tags += createTagMessage("friendChat" + std::to_string(i),
+                                     memo[i][0] + "$:$" + memo[i][1] + "$:$" + memo[i][2] + "$:$" + memo[i][3] + "$:$" +
+                                     memo[i][4]);  // 避免切割到时间，使用$:$
+        }
+        tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+        response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 发送信息
+ * @return
+ */
+bool Request::sendMessage() {
+    std::string session = analysisTag(payload_, "session");
+    std::string sourceId = analysisTag(payload_, "sourceId");
+    std::string destId = analysisTag(payload_, "destId");
+    std::string isGroup = analysisTag(payload_, "isGroup");
+    std::string message = analysisTag(payload_, "message");
+    if (session == session_ && stoi(sourceId) == userId_) {
+        if (isGroup == "false") {
+            char *sql = new char[256];
+            snprintf(sql, 256,
+                     "insert into friendMessage(sourceId, destId, content, sendTime) values (%d, %d, '%s', now());",
+                     stoi(sourceId), stoi(destId), message.c_str());  // 记录消息内容。
+            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            Redis::get_singleton_()->publish("friendMessage", stoi(sourceId), stoi(destId));  // 通知目标刷新群组列表。
+            delete[] sql;
+            ForceSendMessage(stoi(destId), stoi(sourceId));  // 强制更新前端聊天框内容。
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+ * 推送所有好友的名单（强制修改前端版本）。
+ */
+void Request::ForceUpdateSendAllFriends() {
+    std::vector<std::pair<int, std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllFriendsId(
+            userId_);
+    std::string tags;
+    for (int i = 0; i < ids.size(); ++i) {
+        // 进行额外查询，看看他给我发了多少消息还没看。
+        int count = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadFriendMessageCount(
+                ids[i].first, userId_);
+        tags += createTagMessage("friend" + std::to_string(i), std::to_string(ids[i].first) + ":" +
+                                                               ids[i].second + ":" + std::to_string(
+                count));  // 好友信息的格式friend[0->n - 1]是tag，信息是id:name:未读消息数量。
+    }
+    tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个好友。
+    response_->sendWebSocketResponseBuffer(RET_CODE::FORCE_FRIEND_LIST, "好友列表", tags);
+}
+
+void Request::ForceSendMessage(int sourceId, int destId) {
+    // 按照(对方,我)找出最后的读取时间，然后取出所有大于这个时间的信息，取出每一个结果。分别是聊天记录id，请求者id，请求者name,信息内容，时间。
+    std::vector<std::vector<std::string>> memo = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadFriendMessage(
+            sourceId, destId);  // 聊天记录。
+    sendAllFriends();  // 发送好友名单(可以改变未读消息数量。)
+    std::string tags;
+    for (int i = 0; i < memo.size(); ++i) {
+        tags += createTagMessage("friendChat" + std::to_string(i),
+                                 memo[i][0] + "$:$" + memo[i][1] + "$:$" + memo[i][2] + "$:$" + memo[i][3] + "$:$" +
+                                 memo[i][4]);  // 避免切割到时间，使用$:$
+    }
+    tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+    response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
 }

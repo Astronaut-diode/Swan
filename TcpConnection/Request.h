@@ -28,10 +28,12 @@ public:  // 用于写typedef或者静态常量等。
     enum RET_CODE {
         FRIEND_LIST = 101,  // 好友列表
         GROUP_LIST = 102,  // 群组列表
+        FRIEND_CHAT = 103,  // 请求获取好友之间的聊天历史记录。
         SUCCESS = 200,  // 操作成功
         ADD_FRIEND_REQUEST = 201,  // 添加好友的请求。
         ADD_GROUP_REQUEST = 202,  // 添加群组的请求。
         CREATE_GROUP_REQUEST = 301,  // 创建群组的请求。
+        FORCE_FRIEND_LIST = 401,  // 强制推送好友列表
     };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。
@@ -51,8 +53,11 @@ private:  // 变量区域
     char url_[128];  // websocket发起的请求地址。
     int userId_;  // 用户的id。
     std::string session_;  // 对应的session。
+
 public:
     char serverKey_[30];
+    int chatId_;  // 当前正在和谁聊天。
+    bool isGroup_;  // 是不是群聊天。
 private:  // 函数区域
     void reset();
 
@@ -81,6 +86,8 @@ private:  // 函数区域
     bool createGroup();  // 创建一个名字为groupName的群组，群主是本人。
 
     bool processAddGroupRequest();  // 发送添加群组的请求。
+
+    bool chatWithFriend();  // 切换聊天状态为好友聊天状态。
 public:
     Request() {}
 
@@ -113,6 +120,12 @@ public:
     void sendAllFriends();  // 推送所有好友的名单。
 
     void sendAllGroups();  // 推送所有群组的名单。
+
+    bool sendMessage();  // 发送信息。
+
+    void ForceUpdateSendAllFriends();  // 强制推送好友名单，前端必须更新。
+
+    void ForceSendMessage(int sourceId, int destId);  // 强制刷新前端信息。
 };
 
 #endif //SWAN_REQUEST_H
