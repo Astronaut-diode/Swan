@@ -52,6 +52,20 @@ public:
     bool sendAddFriendRequest(int sourceId, int destId, bool processed);  // 插入好友请求。
 
     bool processSql(const char *sql);  // 直接执行一条给定的sql语句。
+
+    std::vector<std::pair<int, std::string>> findAllFriendsId(int userId);  // 找到userId的所有好友。
+
+    bool createGroup(int sourceId, const std::string &groupName);  // 创建群组。
+
+    std::vector<std::pair<int, std::string>> findAllGroups(int userId);  // 找到userId的所有群组。
+
+    bool sendAddGroupRequest(int sourceId, int destId, bool processed);  // 插入群组添加请求。
+
+    int findUserIdByGroupId(int groupId);  // 查询群主ID。
+
+    std::vector<std::pair<int, std::string>> findAllWaitProcessFriendRequest(int userId);  // 找到userId的所有待处理好友请求。
+
+    std::vector<std::vector<std::string>> findAllWaitProcessGroupRequest(int userId);  // 找到userId的所有待处理群请求。
 };
 
 #endif

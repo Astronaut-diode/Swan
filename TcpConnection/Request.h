@@ -26,8 +26,12 @@ class Request {
 public:  // 用于写typedef或者静态常量等。
     static const int kReadBufferMaxLength = 4 * 1024;
     enum RET_CODE {
+        FRIEND_LIST = 101,  // 好友列表
+        GROUP_LIST = 102,  // 群组列表
         SUCCESS = 200,  // 操作成功
         ADD_FRIEND_REQUEST = 201,  // 添加好友的请求。
+        ADD_GROUP_REQUEST = 202,  // 添加群组的请求。
+        CREATE_GROUP_REQUEST = 301,  // 创建群组的请求。
     };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。
@@ -71,7 +75,12 @@ private:  // 函数区域
     bool processRegister();  // 处理注册请求，返回的bool代表注册是否成功。
 
     bool processLogin(int &userId);  // 处理登录请求，返回的bool代表登录是否成功。
+
     bool processAddFriendRequest();  // 处理发送添加请求，返回的bool代表请求是否发送成功。
+
+    bool createGroup();  // 创建一个名字为groupName的群组，群主是本人。
+
+    bool processAddGroupRequest();  // 发送添加群组的请求。
 public:
     Request() {}
 
@@ -96,6 +105,14 @@ public:
     bool pushAddFriendRequestMessage(int sourceId, int destId);  // 推送添加好友的信息。
 
     bool acceptOrRefuseAddFriendRequest();  // 接受或拒绝好友请求。
+
+    bool pushAddGroupRequestMessage(int sourceId, int destId);  // 推送添加群组的信息。
+
+    bool acceptOrRefuseAddGroupRequest();  // 接受或拒绝群组添加请求。
+
+    void sendAllFriends();  // 推送所有好友的名单。
+
+    void sendAllGroups();  // 推送所有群组的名单。
 };
 
 #endif //SWAN_REQUEST_H

@@ -42,8 +42,8 @@ Acceptor::Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConn
     distributeConnectionCallBack_ = distributeConnectionCallBack;
     sendInLoopCallBack_ = sendInLoopCallBack;
     // 顺带订阅redis的四个频道
-    std::string names[] = {"friendMessage", "friendRequest", "groupMessage", "groupRequest"};
-    for (int i = 0; i < 4; ++i) {  // 开始订阅四个频道。
+    std::string names[] = {"friendMessage", "friendRequest", "groupMessage", "groupRequest", "friendList", "groupList"};
+    for (int i = 0; i < 6; ++i) {  // 开始订阅六个频道。
         redisContexts_[i] = nullptr;
         assert(Redis::get_singleton_()->GetConnection(&redisContexts_[i]));
         // 订阅频道

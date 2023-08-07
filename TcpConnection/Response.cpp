@@ -166,18 +166,18 @@ void Response::sendWebSocketResponseBuffer(int status, const std::string &messag
     buffer[1] = (char) count;
     int next = 2;
     if (count == 126) {
-        buffer[2] = (char) (count >> 8);
-        buffer[3] = (char) count;
+        buffer[2] = (char) (len >> 8);
+        buffer[3] = (char) len;
         next = 4;
     } else if (count == 127) {
-        buffer[2] = (char) (count >> 56);
-        buffer[3] = (char) (count >> 48);
-        buffer[4] = (char) (count >> 40);
-        buffer[5] = (char) (count >> 32);
-        buffer[6] = (char) (count >> 24);
-        buffer[7] = (char) (count >> 16);
-        buffer[8] = (char) (count >> 8);
-        buffer[9] = (char) (count);
+        buffer[2] = (char) (len >> 56);
+        buffer[3] = (char) (len >> 48);
+        buffer[4] = (char) (len >> 40);
+        buffer[5] = (char) (len >> 32);
+        buffer[6] = (char) (len >> 24);
+        buffer[7] = (char) (len >> 16);
+        buffer[8] = (char) (len >> 8);
+        buffer[9] = (char) (len);
         next = 10;
     }
     strncpy(buffer + next, content.c_str(), content.size());

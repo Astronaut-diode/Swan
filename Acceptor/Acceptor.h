@@ -29,8 +29,8 @@ private:  // 变量区域
     MainMonitor *mainMonitor_;
     DistributeConnectionCallBack distributeConnectionCallBack_;
     SendInLoopCallBack sendInLoopCallBack_;
-    Channel *subscribeChannel_[4];  // 四个redis订阅的频道。指针数组。
-    redisContext *redisContexts_[4];  // 四个订阅redis对应的context
+    Channel *subscribeChannel_[6];  // 四个redis订阅的频道。指针数组。
+    redisContext *redisContexts_[6];  // 四个订阅redis对应的context
 public:
 
 private:  // 函数区域

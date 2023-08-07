@@ -241,6 +241,10 @@ int Request::receiveWebSocketRequest() {
             ret = userId_;  // 代表当前是登陆成功的请求。
             session_ = session;
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆成功", tags);
+            sendAllFriends();  // 发送好友名单。
+            sendAllGroups();  // 发送群组名单。
+            pushAddFriendRequestMessage(-1, -1);  // 发送当前用户所有待处理的添加好友请求。
+            pushAddGroupRequestMessage(-1, -1);  // 发送当前用户所有待处理的添加群组请求。
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "登陆失败");
         }
@@ -250,11 +254,30 @@ int Request::receiveWebSocketRequest() {
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友添加请求发送失败");
         }
-    } else if(strcmp("/acceptOrRefuseAddFriendRequest", url_) == 0) {
-        if(acceptOrRefuseAddFriendRequest()) {
+    } else if (strcmp("/acceptOrRefuseAddFriendRequest", url_) == 0) {
+        if (acceptOrRefuseAddFriendRequest()) {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友请求处理成功");
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "好友请求处理失败");
+        }
+    } else if (strcmp("/createGroup", url_) == 0) {
+        if (createGroup()) {
+            sendAllGroups();  // 群组建好的话，需要刷新群组名单。
+            response_->sendWebSocketResponseBuffer(RET_CODE::CREATE_GROUP_REQUEST, "群组创建成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::CREATE_GROUP_REQUEST, "群组创建失败");
+        }
+    } else if (strcmp("/addGroupRequest", url_) == 0) {
+        if (processAddGroupRequest()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求发送成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求发送失败");
+        }
+    } else if(strcmp("/receiveAddGroupRequest", url_) == 0) {
+        if (acceptOrRefuseAddGroupRequest()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求处理成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组添加请求处理失败");
         }
     }
     reset();
@@ -310,8 +333,15 @@ bool Request::processAddFriendRequest() {
  * @return
  */
 bool Request::pushAddFriendRequestMessage(int sourceId, int destId) {
-    std::string tags = createTagMessage("sourceId", std::to_string(sourceId));
-    tags += createTagMessage("destId", std::to_string(destId));
+    std::string tags;
+    // 找到所有想要添加我的人。
+    std::vector<std::pair<int, std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllWaitProcessFriendRequest(
+            userId_);
+    for (int i = 0; i < ids.size(); ++i) {
+        tags += createTagMessage("friendRequest" + std::to_string(i), std::to_string(ids[i].first) + ":" +
+                                                                      ids[i].second);  // 好友请求信息的格式friendRequest[0->n - 1]是tag，信息是id:name
+    }
+    tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个好友请求。
     response_->sendWebSocketResponseBuffer(RET_CODE::ADD_FRIEND_REQUEST, "新的好友申请", tags);
     return true;
 }
@@ -331,7 +361,7 @@ bool Request::acceptOrRefuseAddFriendRequest() {
                  stoi(sourceId),
                  stoi(destId));
         MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
-        if(process == "yes") {
+        if (process == "yes") {
             snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
                      stoi(sourceId),
                      stoi(destId));
@@ -340,8 +370,126 @@ bool Request::acceptOrRefuseAddFriendRequest() {
                      stoi(destId),
                      stoi(sourceId));
             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            Redis::get_singleton_()->publish("friendList", stoi(destId), stoi(sourceId));  // 通知目标刷新好友列表。
+            Redis::get_singleton_()->publish("friendList", stoi(sourceId), stoi(destId));  // 通知目标刷新好友列表。
         }
-        delete [] sql;
+        delete[] sql;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 推送所有好友的名单。
+ */
+void Request::sendAllFriends() {
+    std::vector<std::pair<int, std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllFriendsId(
+            userId_);
+    std::string tags;
+    for (int i = 0; i < ids.size(); ++i) {
+        tags += createTagMessage("friend" + std::to_string(i), std::to_string(ids[i].first) + ":" +
+                                                               ids[i].second);  // 好友信息的格式friend[0->n - 1]是tag，信息是id:name
+    }
+    tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个好友。
+    response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_LIST, "好友列表", tags);
+}
+
+/**
+ * 创建一个名字为groupName的群组，群主是本人。
+ * @return
+ */
+bool Request::createGroup() {
+    std::string sourceId = analysisTag(payload_, "sourceId");
+    std::string session = analysisTag(payload_, "session");
+    std::string groupName = analysisTag(payload_, "groupName");
+    if (session == session_ && stoi(sourceId) == userId_) {
+        return MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->createGroup(userId_, groupName);
+    }
+    return false;
+}
+
+/**
+ * 推送所有群组的名单。
+ */
+void Request::sendAllGroups() {
+    std::vector<std::pair<int, std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllGroups(
+            userId_);
+    std::string tags;
+    for (int i = 0; i < ids.size(); ++i) {
+        tags += createTagMessage("group" + std::to_string(i), std::to_string(ids[i].first) + ":" +
+                                                              ids[i].second);  // 群组信息的格式group[0->n - 1]是tag，信息是id:name
+    }
+    tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组。
+    response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_LIST, "群组列表", tags);
+}
+
+/**
+ * 发送添加群组请求。
+ * @param userId
+ * @return
+ */
+bool Request::processAddGroupRequest() {
+    std::string sourceId = analysisTag(payload_, "sourceId");
+    std::string groupId = analysisTag(payload_, "destId");
+    std::string session = analysisTag(payload_, "session");
+    if (session == session_ && stoi(sourceId) == userId_) {
+        MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddGroupRequest(stoi(sourceId),
+                                                                                                  stoi(groupId),
+                                                                                                  false);
+        int masterId = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserIdByGroupId(
+                std::stoi(groupId));
+        Redis::get_singleton_()->publish("groupRequest", stoi(sourceId), masterId);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 推送添加群组的信息。
+ * @param sourceId
+ * @param destId
+ * @return
+ */
+bool Request::pushAddGroupRequestMessage(int sourceId, int destId) {
+    std::string tags;
+    // 找到所有想要添加我的群的人。
+    std::vector<std::vector<std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllWaitProcessGroupRequest(
+            userId_);
+    for (int i = 0; i < ids.size(); ++i) {
+        tags += createTagMessage("groupRequest" + std::to_string(i),
+                                 ids[i][0] + ":" + ids[i][1] + ":" + ids[i][2] + ":" +
+                                 ids[i][3]);  // 群组请求信息的格式groupRequest[0->n - 1]是tag，信息是请求者名字:请求者id:群组ID：群组名字。
+    }
+    tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组请求。
+    response_->sendWebSocketResponseBuffer(RET_CODE::ADD_GROUP_REQUEST, "新的群组申请", tags);
+    return true;
+}
+
+
+/**
+ * 接受或拒绝好友请求。
+ * @return
+ */
+bool Request::acceptOrRefuseAddGroupRequest() {
+    std::string sourceId = analysisTag(payload_, "sourceId");
+    std::string groupId = analysisTag(payload_, "destId");
+    std::string masterId = analysisTag(payload_, "masterId");
+    std::string session = analysisTag(payload_, "session");
+    std::string process = analysisTag(payload_, "process");  // 代表是否同意，yes或no
+    if (session == session_ && stoi(masterId) == userId_) {
+        char *sql = new char[256];
+        snprintf(sql, 256, "update groupRequest set processed = true where sourceId = %d and destId = %d;",
+                 stoi(sourceId),
+                 stoi(groupId));
+        MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+        if (process == "yes") {
+            snprintf(sql, 256, "insert into groupRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
+                     stoi(groupId),
+                     stoi(sourceId));
+            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            Redis::get_singleton_()->publish("groupList", -1, stoi(sourceId));  // 通知目标刷新群组列表。
+        }
+        delete[] sql;
         return true;
     }
     return false;

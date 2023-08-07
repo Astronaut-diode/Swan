@@ -29,7 +29,7 @@
 
         function Connect() {
             try {
-                socket = new WebSocket('ws://localhost:8081');
+                socket = new WebSocket('ws://192.168.4.171:8081');
             } catch (e) {
                 console.log("连接出现error:" + e);
                 return;
@@ -110,12 +110,7 @@
                 `
                 <div class="container" id="groupContainerDiv">
                   <ul class="list" id="groupContainerUl">
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
+
                   </ul>
                 </div>`;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
@@ -132,12 +127,7 @@
                 `
                 <div class="container" id="personContainerDiv">
                   <ul class="list" id="personContainerUl">
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
+
                   </ul>
                 </div>`;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
@@ -190,7 +180,9 @@
                 <input id="addFriendText" type="text" style="float: left;margin-top: -488px;height: 19px;">
                 <button id="addFriendButton" onclick="addFriend();" style="float: left;margin-top: -488px;margin-left: 180px;">添加好友</button>
                 <input id="addGroupText" type="text" style="float: left;margin-top: -587px;margin-left: 260px;height: 19px;">
-                <button id="addGroupButton" onClick="alert('添加群组');" style="float: left;margin-top: -587px;margin-left: 440px;">添加群组</button>
+                <button id="addGroupButton" onclick="addGroup();" style="float: left;margin-top: -587px;margin-left: 440px;">添加群组</button>
+                <input id="createGroupText" type="text" style="float: left;margin-top: -587px;margin-left: 518px;height: 19px;">
+                <button id="createGroupButton" onclick="createGroupByName();" style="float: left;margin-top: -587px;margin-left: 704px;">创建群组</button>
                 <input id="message" style="float: right;margin-right: 500px;margin-top: 30px;width: 600px;height: 30px;">
                 <button id="sendMessageButton" onClick="alert('发送信息');" style="float: right;margin-right: 419px;margin-top: -35px;height: 35px;">发送信息</button>
             `;
@@ -212,7 +204,6 @@
 </head>
 
 <body>
-
 
 
 <div id="loginForm">
@@ -239,46 +230,125 @@
 </html>
 <script>
     var session, userId;
+    var friendIds = new Set(), groupIds = new Set(), friendRequestIds = new Set(), groupRequestIds = new Set();
     Connect();  // 每次打开网页或者刷新网页，自动建立websocket连接。
     function sMessage(msg) {  // 接收来自服务器端的信息。
         var content = msg.data;
         var status = extractTagContent(content, "status");
-        if (status == 200) {
+        if (status == 101) {  // 刷新好友列表。
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "friend" + i)[0];
+                var parts = innerContent.split(':');
+                var num = parts[0], text = parts[1];
+                if(friendIds.has(num)) {  // 已经存在了，就直接略过。
+                    continue;
+                }
+                friendIds.add(num);  // 记录所有好友的名单。
+
+                var dynamic_body = document.getElementById("personContainerUl");
+                var newElement = document.createElement("li");
+                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+                newElement.innerHTML =
+                    `<li class="list-item" onclick="alert(` + num + `);">`
+                    +
+                    num + "   " + text
+                    +
+                    `</li>`;
+                dynamic_body.appendChild(newElement);
+            }
+        } else if (status == 102) {  // 刷新群组列表。
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "group" + i)[0];
+                var parts = innerContent.split(':');
+                var num = parts[0], text = parts[1];
+                if(groupIds.has(num)) {  // 已经存在的就直接略过。
+                    continue;
+                }
+                groupIds.add(num);  // 记录所有群组的名单。
+
+                var dynamic_body = document.getElementById("groupContainerUl");
+                var newElement = document.createElement("li");
+                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+                newElement.innerHTML =
+                    `<li class="list-item" onclick="alert(` + num + `);">`
+                    +
+                    num + "   " + text
+                    +
+                    `</li>`;
+                dynamic_body.appendChild(newElement);
+            }
+        } else if (status == 200) {
             var message = extractTagContent(content, "message");
             if (message == "注册成功" || message == "注册失败") {  // 清空输入框。
                 clear("username");
                 clear("password");
                 alert(message);
-            } else if(message == "登陆成功" || message == "登陆失败") {
+            } else if (message == "登陆成功" || message == "登陆失败") {
                 clear("username");
                 clear("password");
                 alert(message);
-                if(message == "登陆成功") {
+                if (message == "登陆成功") {
                     session = extractTagContent(content, "session");
                     userId = extractTagContent(content, "userId");
                     console.log("session的内容是" + session);
                     console.log("userId的内容是" + userId);
                     showMain();
                 }
-            } else if(message == "好友添加请求发送成功" || message == "好友添加请求发送成功") {
+            } else if (message == "好友添加请求发送成功" || message == "好友添加请求发送成功") {
                 clear("addFriendText");
                 alert(message);
             }
-        } else if (status == 201) {  // 添加好友的请求
-            var sourceId = extractTagContent(content, "sourceId");
-            var destId = extractTagContent(content, "destId");
-            console.log(sourceId + "向" + destId + "申请添加好友" + "我是" + destId);
-            var dynamic_body = document.getElementById("requestContainerUl");
-            var newElement = document.createElement("li");
-            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
-            newElement.innerHTML =
-                `<li class="list-item">`
-                +
-                sourceId
-                +
-                `<button onclick="receiveAddRequest(` + sourceId + `, 'yes', this);">接受</button>
-                <button onclick="receiveAddRequest(` + sourceId + `,'no', this)">拒绝</button></li>`;
-            dynamic_body.appendChild(newElement);
+        } else if (status == 201) {  // 显示请求添加我为好友的请求
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "friendRequest" + i)[0];
+                var parts = innerContent.split(':');
+                var num = parts[0], text = parts[1];
+                if(friendRequestIds.has(num)) {  // 已经存在了，就直接略过。
+                    continue;
+                }
+                friendRequestIds.add(num);  // 记录所有好友的名单。
+
+                var dynamic_body = document.getElementById("requestContainerUl");
+                var newElement = document.createElement("li");
+                newElement.innerHTML =
+                    `<li class="list-item">`
+                    +
+                    text + "请求成为好友"
+                    +
+                    `<button onclick="receiveAddRequest(` + num + `, 'yes', this);">接受</button>
+                <button onclick="receiveAddRequest(` + num + `,'no', this)">拒绝</button></li>`;
+                dynamic_body.appendChild(newElement);
+            }
+        } else if (status == 202) {  // 请求添加我的群组的请求
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "groupRequest" + i)[0];
+                console.log(innerContent);
+                var parts = innerContent.split(':');
+                var sourceId = parts[1], sourceName = parts[0], destId = parts[2], destName = parts[3];
+                if(groupRequestIds.has(sourceId)) {  // 已经存在了，就直接略过。
+                    continue;
+                }
+                groupRequestIds.add(sourceId);  // 记录所有想要添加群聊的用户id。
+
+                var dynamic_body = document.getElementById("requestContainerUl");
+                var newElement = document.createElement("li");
+                newElement.innerHTML =
+                    `<li class="list-item">`
+                    +
+                    "用户" + sourceName + "请求加入" + destName
+                    +
+                    `<button onclick="receiveAddGroupRequest(` + sourceId + ',' + destId + `, 'yes', this);">接受</button>
+                <button onclick="receiveAddGroupRequest(` + sourceId + ',' + destId + `,'no', this)">拒绝</button></li>`;
+                dynamic_body.appendChild(newElement);
+            }
+        } else if (status == 301) {  // 创建群组的请求。
+            clear("createGroupText");
+            var message = extractTagContent(content, "message");
+            console.log(message);
         }
     }
 
@@ -320,6 +390,10 @@
             alert("请输入对方的账号");
             return;
         }
+        if (friendIds.has(friendId)) {
+            alert("对方已经是你的好友");
+            return;
+        }
         var context = "";
         context += createTag("url", "/addFriendRequest");  // 发送/addFriendRequest请求，是userId请求添加friendId。
         context += createTag("session", session);
@@ -342,6 +416,69 @@
         // 获取父元素并移除
         var listItem = button.parentElement;
         listItem.parentElement.removeChild(listItem);  // 删除待处理的请求。
+        friendRequestIds.delete(sourceId.toString());  // 请求已经处理掉了，避免下次进不来,需要删除掉。
+        socket.send(context);
+    }
+
+    /**
+     * 通过名字创建群组。
+     */
+    function createGroupByName() {
+        var groupName = document.getElementById("createGroupText").value;
+        clear("createGroupText");
+        if (groupName.length === 0) {
+            alert("请输入群组的名称");
+            return;
+        }
+        var context = "";
+        context += createTag("url", "/createGroup");  // 发送/addFriendRequest请求，是userId请求添加friendId。
+        context += createTag("session", session);
+        context += createTag("sourceId", userId);
+        context += createTag("groupName", groupName);
+        socket.send(context);
+    }
+
+    /**
+     * 发送添加群组的请求。
+     */
+    function addGroup() {
+        var groupId = document.getElementById("addGroupText").value;
+        clear("addGroupText");
+        if (groupId.length === 0) {
+            alert("请输入群ID");
+            return;
+        }
+        if (groupIds.has(groupId)) {
+            alert("已经在群内");
+            return;
+        }
+        var context = "";
+        context += createTag("url", "/addGroupRequest");  // 发送/addGroupRequest请求，是userId请求添加groupId。
+        context += createTag("session", session);
+        context += createTag("sourceId", userId);
+        context += createTag("destId", groupId);
+        socket.send(context);
+    }
+
+    /**
+     * 处理群组请求。
+     * @param soureId
+     * @param destId
+     * @param decision
+     * @param button
+     */
+    function receiveAddGroupRequest(sourceId, destId, decision, button) {
+        var context = "";
+        context += createTag("url", "/receiveAddGroupRequest");
+        context += createTag("session", session);
+        context += createTag("sourceId", sourceId);
+        context += createTag("destId", destId);
+        context += createTag("masterId", userId);
+        context += createTag("process", decision);
+        // 获取父元素并移除
+        var listItem = button.parentElement;
+        listItem.parentElement.removeChild(listItem);  // 删除待处理的请求。
+        groupRequestIds.delete(sourceId.toString());  // 请求已经处理掉了，避免下次进不来,需要删除掉。
         socket.send(context);
     }
 </script>
