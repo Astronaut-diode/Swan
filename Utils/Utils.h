@@ -5,11 +5,22 @@
 #ifndef SWAN_UTILS_H
 #define SWAN_UTILS_H
 
-#include <unistd.h>
-#include <sys/stat.h>
-#include <cstring>
 #include <fcntl.h>
+#include <csignal>
+#include <cassert>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <iostream>
+#include <string>
+#include <cstring>
+#include <dirent.h>
+#include <vector>
+#include <sstream>
+#include <iomanip>
+#include <fstream>
+#include <random>
 
 class Utils {
 public:
@@ -41,6 +52,24 @@ public:
         fcntl(fd, F_SETFL, new_option);
         return old_version;
     }
+
+    /**
+ * 生成固定位数的sesison
+ * @param length
+ * @return
+ */
+    static std::string GenerationSession(int length) {
+        static std::string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        std::uniform_int_distribution<int> distribution(0, charset.length() - 1);
+        std::string result;
+        for (int i = 0; i < length; ++i) {
+            result += charset[distribution(generator)];
+        }
+        return result;
+    }
+
 };
 
 #endif //SWAN_UTILS_H

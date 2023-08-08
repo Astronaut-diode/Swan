@@ -14,19 +14,19 @@
 #include "../Thread/Thread.h"
 #include "../TcpConnection/TcpConnection.h"
 
+class TcpConnection;
+
 struct WeakTcpConnection {
     std::weak_ptr<TcpConnection> weakPtr_;
 
-    WeakTcpConnection(const std::shared_ptr<TcpConnection> &conn) {
-        weakPtr_ = conn;
+    explicit WeakTcpConnection(const std::shared_ptr<TcpConnection> &conn):weakPtr_(conn) {
+
     }
 
     ~WeakTcpConnection() {  // 进行析构，将weakPtr的结果转换为shared_ptr，并调用关闭连接的操作。
         std::shared_ptr<TcpConnection> p = weakPtr_.lock();
-        std::cout << "当前的use_count:" << p.use_count() << std::endl;
-        std::cout << "地址是" << p.get() << std::endl;
         if(p) {  // 因为是weak指针，所以原始内容被释放了的话，这里结果就是空，否则就不会是空。
-            // todo:准备关闭目标的connection连接。
+            LOG << (weakPtr_.lock().get()) << "析构了\n";
             (*p).handleClose();
         }
     }
@@ -34,7 +34,7 @@ struct WeakTcpConnection {
 
 class TaskScheduler {
 public:  // 用于写typedef或者静态常量等。
-    static const int kLen = 8;  // 代表长时间不操作被踢出时间轮的值。
+    static const int kLen = 1 * 300;  // 代表长时间不操作被踢出时间轮的值。
     const char *kTimerThreadName = "Timer\0";  // 开启定时器异步功能的时候，定时器线程的名字。
     typedef std::shared_ptr<WeakTcpConnection> sharedWeakTcpConnection;
     typedef std::unordered_set<sharedWeakTcpConnection> Bucket;
@@ -59,6 +59,8 @@ public:
     void launchTimeChannel();  // 启动Time线程，并在其中启动一个专属的epoll监听事件以及timeChannel。
 
     void insertToConnections(const std::shared_ptr<TcpConnection> &tcpConnection);  // 将新的连接插入到时间轮中。
+
+    void updateToConnections(const std::shared_ptr<TcpConnection> &tcpConnection);  // 发送信息的时候，更新时间轮。
 };
 
 #endif //SWAN_TASKSCHEDULER_H

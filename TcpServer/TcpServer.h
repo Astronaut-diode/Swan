@@ -17,6 +17,7 @@
 
 typedef std::vector<std::unique_ptr<Thread>> ThreadList;
 typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> InsertToTimeWheelCallBack;
+typedef std::function<void(const std::shared_ptr<TcpConnection> &tcpConnection)> UpdateToTimeWheelCallBack;
 
 class TcpServer {
 public:  // 用于写typedef或者静态常量等。
@@ -24,18 +25,20 @@ public:  // 用于写typedef或者静态常量等。
     const char *kSubThreadName = "subThread-";
     static int kNumber;
 private:  // 变量区域
-    ThreadList threadList_;  // 记录所有的子线程
+    std::vector<Thread*> threadList_;  // 记录所有的子线程
     std::vector<Monitor *> monitors_;  // 记录所有的monitor。
     sem_t latch_;
     std::map<int, std::shared_ptr<TcpConnection>> sharedConnections_;  // 所有的连接，并且使用了shared指针。;
+    std::map<int, TcpConnection> connectionSessions_;  // 记录已经连接的用户使用的session是多少。
     int distribute_;  // 用于轮询查询的数字。
     InsertToTimeWheelCallBack insertToTimeWheelCallBack_;
+    UpdateToTimeWheelCallBack updateToTimeWheelCallBack_;
 public:
 
 private:  // 函数区域
 
 public:
-    TcpServer(InsertToTimeWheelCallBack insertToTimeWheelCallBack);
+    TcpServer(InsertToTimeWheelCallBack insertToTimeWheelCallBack, UpdateToTimeWheelCallBack updateToTimeWheelCallBack);
 
     ~TcpServer();
 
@@ -44,6 +47,10 @@ public:
     void distributeConnection(int connectionFd);  // 使用connectionFd创建一个连接，并且需要将其分到某一个loop上。
 
     void deleteConnection(int connectionFd);  // 删除connection。
+
+    std::map<int, TcpConnection> &getConnectionSessions();
+
+    bool sendInLoop(int sourceId, int destId, int type);
 };
 
 #endif //SWAN_TCPSERVER_H

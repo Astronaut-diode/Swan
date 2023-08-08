@@ -82,5 +82,13 @@ void Monitor::loop() {
         for (int i = 0; i < activateChannels.size(); ++i) {
             activateChannels[i]->handleEvent();
         }
+        for (int i = 0; i < sendInLoopCallBacks_.size(); ++i) {
+            sendInLoopCallBacks_[i](-1, -1, -1);  // 执行当前monitor待执行的内容。
+        }
+        sendInLoopCallBacks_.clear();
     }
+}
+
+void Monitor::addSendInLoopCallBack(SendCallBack sendCallBack) {
+    sendInLoopCallBacks_.emplace_back(sendCallBack);
 }

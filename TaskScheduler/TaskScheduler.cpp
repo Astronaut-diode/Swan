@@ -28,7 +28,11 @@ void TaskScheduler::dump() {
         buffer << "[" << i << "]===>";
         for (std::unordered_set<sharedWeakTcpConnection>::iterator ite = (*timeWheel_)[i].begin();
              ite != (*timeWheel_)[i].end(); ++ite) {
-            buffer << static_cast<void *>((*ite).get()->weakPtr_.lock().get()) << " ";
+            if((*ite).get()) {
+                buffer << static_cast<void *>((*ite).get()->weakPtr_.lock().get()) << ":" << (*ite).use_count() << " ";
+            } else {
+                buffer << 0x0 << ":" << (*ite).use_count() << " ";
+            }
         }
         buffer << "\n";
     }
@@ -70,5 +74,15 @@ void TaskScheduler::launchTimeChannel() {
  */
 void TaskScheduler::insertToConnections(const std::shared_ptr<TcpConnection> &tcpConnection) {
     // 注意，这个TcpConnection肯定是已经被记录到share_ptr了，为了让关闭连接的时候可以erase直接析构对象，我们这里不能再次设计为share_ptr,只能够使用weak_ptr，仅仅用于记录这个对象是否存在，如果存在，析构的时候调用stop函数就行。
-    (*timeWheel_).data_.back().insert(std::make_shared<WeakTcpConnection>(tcpConnection));
+    std::shared_ptr<WeakTcpConnection> weakTcpConnection = std::make_shared<WeakTcpConnection>(tcpConnection);
+    tcpConnection->setContext(weakTcpConnection);
+    (*timeWheel_).data_.back().insert(weakTcpConnection);
+}
+
+/**
+ * 发送信息的时候，更新时间轮。
+ * @param tcpConnection
+ */
+void TaskScheduler::updateToConnections(const std::shared_ptr<TcpConnection> &tcpConnection) {
+    (*timeWheel_).data_.back().insert(tcpConnection->context_.lock());
 }

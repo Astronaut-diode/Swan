@@ -2,8 +2,8 @@
 // Created by diode on 23-7-23.
 //
 
-#include <iostream>
 #include "Poller.h"
+
 
 Poller::Poller() {
     pollerFd_ = ::epoll_create1(EPOLL_CLOEXEC);
@@ -12,7 +12,9 @@ Poller::Poller() {
 }
 
 Poller::~Poller() {
-
+    if(fcntl(pollerFd_, F_GETFL) == -1) {  // 关闭poller的文件描述符。
+        close(pollerFd_);
+    }
 }
 
 /**
@@ -25,7 +27,12 @@ void Poller::updateEpollEvents(int operation, Channel *channel) {
     event.events = channel->events();
     event.data.fd = channel->fd();
     event.data.ptr = channel;
-    assert(::epoll_ctl(pollerFd_, operation, channel->fd(), &event) >= 0);
+    channel->setRevents(0);  // 重新赋值。
+    if(fcntl(channel->fd(), F_GETFL) == -1) {
+        LOG << channel->fd() << "文件描述符已经被关闭，不再执行后续任务\n";
+    } else {
+        assert(::epoll_ctl(pollerFd_, operation, channel->fd(), &event) >= 0);
+    }
 }
 
 /**
