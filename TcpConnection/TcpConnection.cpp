@@ -118,7 +118,7 @@ TcpConnection::setGetConnectionSessionsCallBack_(getConnectionSessionsCallBackFu
 bool TcpConnection::send(int sourceId, int destId, int type) {
     // 请求类型是{"friendMessage", "friendRequest", "groupMessage", "groupRequest", "friendList", "groupList"}
     if (type == 0) {  // 是好友信息，告知目标有来自sourceId的好友信息。
-        if(request_->chatId_ == sourceId) {  // 直接发送新消息
+        if (request_->chatId_ == sourceId) {  // 直接发送新消息
             request_->ForceSendMessage(sourceId, destId);
             return true;
         } else {
@@ -128,6 +128,14 @@ bool TcpConnection::send(int sourceId, int destId, int type) {
     } else if (type == 1) {  // 是添加好友的请求，告知destId，来自sourceId的好友请求。
         request_->pushAddFriendRequestMessage(sourceId, destId);
         return true;
+    } else if (type == 2) {  // 是群组信息，告知目标群组的所有用户有来自群组的新信息。
+        if (request_->chatId_ == sourceId) {  // 直接发送新消息
+            request_->ForceSendGroupMessage(sourceId);
+            return true;
+        } else {
+            request_->ForceUpdateSendAllGroups();  // 强制发送群组名单。
+            return true;
+        }
     } else if (type == 3) {  // 是添加群的请求，告知destId，来自sourceId的群添加请求。
         request_->pushAddGroupRequestMessage(sourceId, destId);
         return true;

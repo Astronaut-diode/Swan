@@ -70,6 +70,12 @@ public:
     std::vector<std::vector<std::string>> findAllUnreadFriendMessage(int sourceId, int destId);  // 找到(sourceId, destId)所有未读取的内容。
 
     int findAllUnreadFriendMessageCount(int sourceId, int destId);  // 查询(sourceId, destId)有多少条未读取的内容，只要数量。
+
+    std::vector<std::vector<std::string>> findAllGroupMessage(int sourceId, int destId);  // 找到(sourceIid, destId)所有未读取的群聊天内容。
+
+    int findAllUnreadGroupMessageCount(int sourceId, int destId);  // 查询(sourceId, destId)有多少条未读取的内容，只要数量。
+
+    std::vector<int> findAllMemberInGroup(int groupId);  // 找到对应群聊中所有的用户id。。
 };
 
 #endif

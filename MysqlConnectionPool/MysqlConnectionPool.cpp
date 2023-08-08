@@ -484,7 +484,8 @@ std::vector<std::vector<std::string>> MysqlConnectionPool::findAllUnreadFriendMe
         }
         mysql_free_result(res);  // 及时的释放结果。
         assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
-        snprintf(sql, 1024, "update friendRelation set lastReadTime = now() where sourceId = %d and destId = %d;", sourceId, destId);  // 更新最后的读取时间。
+        snprintf(sql, 1024, "update friendRelation set lastReadTime = now() where sourceId = %d and destId = %d;",
+                 sourceId, destId);  // 更新最后的读取时间。
         mysql_query(conn, sql);
         pthread_mutex_unlock(&mysql_pool_mutex_);
         delete[] sql;
@@ -513,6 +514,96 @@ int MysqlConnectionPool::findAllUnreadFriendMessageCount(int sourceId, int destI
         MYSQL_RES *res = mysql_store_result(conn);
         while (MYSQL_ROW row = mysql_fetch_row(res)) {  // 取出每一个结果。分别是聊天记录id, 请求者id，请求者name,信息内容，时间。
             ret = atoi(row[0]);
+        }
+        mysql_free_result(res);  // 及时的释放结果。
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        pthread_mutex_unlock(&mysql_pool_mutex_);
+        delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
+
+/**
+ * 找到(sourceIid, destId)所有未读取的群聊天内容。
+ * @param sourceId
+ * @param destId
+ * @return
+ */
+std::vector<std::vector<std::string>> MysqlConnectionPool::findAllGroupMessage(int sourceId, int destId) {
+    std::vector<std::vector<std::string>> ret;
+    MYSQL *conn = nullptr;
+    if (GetConnection(&conn)) {
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+        char *sql = new char[1024]{'\0'};
+        snprintf(sql, 1024,
+                 "select res.groupMessageId, res.sourceId, res.innerSourceId, user.username, res.content, res.sendTime from user inner join (select * from groupMessage where sourceId = %d) res on user.userId = res.innerSourceId;",
+                 sourceId);
+        mysql_query(conn, sql);
+        MYSQL_RES *res = mysql_store_result(conn);
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {  // 取出每一个结果。分别是聊天记录id, 请求者id，请求者name,信息内容，时间。
+            std::vector<std::string> tmp{row[0], row[1], row[2], row[3], row[4], row[5]};
+            ret.emplace_back(tmp);
+        }
+        mysql_free_result(res);  // 及时的释放结果。
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        snprintf(sql, 1024, "update groupRelation set lastReadTime = now() where sourceId = %d and destId = %d;",
+                 sourceId, destId);  // 更新最后的读取时间。
+        mysql_query(conn, sql);
+        pthread_mutex_unlock(&mysql_pool_mutex_);
+        delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
+
+
+/**
+ * 找到(sourceId, destId)所有未读取的内容有多少条。
+ * @param sourceId
+ * @param destId
+ * @return
+ */
+int MysqlConnectionPool::findAllUnreadGroupMessageCount(int sourceId, int destId) {
+    int ret = -1;
+    MYSQL *conn = nullptr;
+    if (GetConnection(&conn)) {
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+        char *sql = new char[1024]{'\0'};
+        snprintf(sql, 1024,
+                 "select count(*) from user inner join (select * from groupMessage where sourceId = %d and sendTime > (select lastReadTime from groupRelation where sourceId = %d and destId = %d)) res on user.userId = res.innerSourceId;",
+                 sourceId, sourceId, destId);
+        mysql_query(conn, sql);
+        MYSQL_RES *res = mysql_store_result(conn);
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {  // 取出每一个结果。分别是聊天记录id, 请求者id，请求者name,信息内容，时间。
+            ret = atoi(row[0]);
+        }
+        mysql_free_result(res);  // 及时的释放结果。
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        pthread_mutex_unlock(&mysql_pool_mutex_);
+        delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
+
+
+/**
+ * 找到对应群聊中所有的用户id。
+ * @param groupId
+ * @return
+ */
+std::vector<int> MysqlConnectionPool::findAllMemberInGroup(int groupId) {
+    std::vector<int> ret;
+    MYSQL *conn = nullptr;
+    if (GetConnection(&conn)) {
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+        char *sql = new char[1024]{'\0'};
+        snprintf(sql, 1024, "select destId from groupRelation where sourceId = %d;", groupId);
+        mysql_query(conn, sql);
+        MYSQL_RES *res = mysql_store_result(conn);
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {
+            ret.emplace_back(atoi(row[0]));
         }
         mysql_free_result(res);  // 及时的释放结果。
         assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的

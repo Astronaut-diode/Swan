@@ -293,6 +293,12 @@ int Request::receiveWebSocketRequest() {
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "信息发送失败");
         }
+    }  else if (strcmp("/chatWithGroup", url_) == 0) {
+        if (chatWithGroup()) {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组聊天列表切换成功");
+        } else {
+            response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组聊天列表切换失败");
+        }
     }
     reset();
     return ret;
@@ -434,8 +440,11 @@ void Request::sendAllGroups() {
             userId_);
     std::string tags;
     for (int i = 0; i < ids.size(); ++i) {
+        // 进行额外查询，看看他给我发了多少消息还没看。
+        int count = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadGroupMessageCount(
+                ids[i].first, userId_);
         tags += createTagMessage("group" + std::to_string(i), std::to_string(ids[i].first) + ":" +
-                                                              ids[i].second);  // 群组信息的格式group[0->n - 1]是tag，信息是id:name
+                                                              ids[i].second + ":" + std::to_string(count));  // 群组信息的格式group[0->n - 1]是tag，信息是id:name:count
     }
     tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组。
     response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_LIST, "群组列表", tags);
@@ -520,6 +529,7 @@ bool Request::acceptOrRefuseAddGroupRequest() {
 bool Request::chatWithFriend() {
     std::string sourceId = analysisTag(payload_, "sourceId");  // 对方
     chatId_ = stoi(sourceId);
+    isGroup_ = false;
     std::string destId = analysisTag(payload_, "destId");  // 我
     std::string session = analysisTag(payload_, "session");
     if (session == session_ && stoi(destId) == userId_) {
@@ -557,9 +567,22 @@ bool Request::sendMessage() {
                      "insert into friendMessage(sourceId, destId, content, sendTime) values (%d, %d, '%s', now());",
                      stoi(sourceId), stoi(destId), message.c_str());  // 记录消息内容。
             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
-            Redis::get_singleton_()->publish("friendMessage", stoi(sourceId), stoi(destId));  // 通知目标刷新群组列表。
+            Redis::get_singleton_()->publish("friendMessage", stoi(sourceId), stoi(destId));  // 通知目标刷新好友信息。
             delete[] sql;
             ForceSendMessage(stoi(destId), stoi(sourceId));  // 强制更新前端聊天框内容。
+            return true;
+        } else {
+            char *sql = new char[256];
+            snprintf(sql, 256,
+                     "insert into groupMessage(sourceId, innerSourceId, content, sendTime) values (%d, %d, '%s', now());",
+                     stoi(destId), stoi(sourceId), message.c_str());  // 记录消息内容(此时的destId就是groupId)
+            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            // todo:找出目标群组中所有的人，然后告知他们，有新消息。
+            std::vector<int> members = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllMemberInGroup(stoi(destId));
+            for(int member: members) {
+                Redis::get_singleton_()->publish("groupMessage", stoi(destId), member);  // 群组通知全体成员有信息。
+            }
+            delete[] sql;
             return true;
         }
     }
@@ -599,4 +622,72 @@ void Request::ForceSendMessage(int sourceId, int destId) {
     }
     tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
     response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
+}
+
+
+
+/**
+ * 切换聊天状态为群组聊天状态。
+ * @return
+ */
+bool Request::chatWithGroup() {
+    std::string sourceId = analysisTag(payload_, "groupId");  // 群组id
+    chatId_ = stoi(sourceId);
+    isGroup_ = true;
+    std::string destId = analysisTag(payload_, "destId");  // 我
+    std::string session = analysisTag(payload_, "session");
+    if (session == session_ && stoi(destId) == userId_) {
+        // 按照(对方,我)找出最后的读取时间，取出每一个结果。分别是聊天记录id，请求者id，请求者name,信息内容，时间。
+        std::vector<std::vector<std::string>> memo = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllGroupMessage(
+                stoi(sourceId), stoi(destId));  // 聊天记录。
+        sendAllGroups();  // 发送群组名单(可以改变未读消息数量。)
+        std::string tags;
+        for (int i = 0; i < memo.size(); ++i) {
+            tags += createTagMessage("groupChat" + std::to_string(i),
+                                     memo[i][0] + "$:$" + memo[i][1] + "$:$" + memo[i][2] + "$:$" + memo[i][3] + "$:$" +
+                                     memo[i][4] + "$:$" + memo[i][5]);  // 避免切割到时间，使用$:$
+        }
+        tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+        response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_CHAT, "群组的聊天记录", tags);
+        return true;
+    }
+    return false;
+}
+
+
+/**
+ * 强制发送消息，更新前端的群组聊天界面。
+ * @param groupId
+ */
+void Request::ForceSendGroupMessage(int groupId) {
+    // 按照(对方,我)找出最后的读取时间，取出每一个结果。
+    std::vector<std::vector<std::string>> memo = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllGroupMessage(
+            groupId, userId_);  // 聊天记录。
+    sendAllGroups();  // 发送群组名单(可以改变未读消息数量。)
+    std::string tags;
+    for (int i = 0; i < memo.size(); ++i) {
+        tags += createTagMessage("groupChat" + std::to_string(i),
+                                 memo[i][0] + "$:$" + memo[i][1] + "$:$" + memo[i][2] + "$:$" + memo[i][3] + "$:$" +
+                                 memo[i][4] + "$:$" + memo[i][5]);  // 避免切割到时间，使用$:$
+    }
+    tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+    response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_CHAT, "群组的聊天记录", tags);
+}
+
+/**
+ * 推送所有群组的名单（强制修改前端版本）。
+ */
+void Request::ForceUpdateSendAllGroups() {
+    std::vector<std::pair<int, std::string>> ids = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllGroups(
+            userId_);
+    std::string tags;
+    for (int i = 0; i < ids.size(); ++i) {
+        // 进行额外查询，看看他给我发了多少消息还没看。
+        int count = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadGroupMessageCount(
+                ids[i].first, userId_);
+        tags += createTagMessage("group" + std::to_string(i), std::to_string(ids[i].first) + ":" +
+                                                              ids[i].second + ":" + std::to_string(count));  // 群组信息的格式group[0->n - 1]是tag，信息是id:name:count
+    }
+    tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组。
+    response_->sendWebSocketResponseBuffer(RET_CODE::FORCE_GROUP_LIST, "群组列表", tags);
 }

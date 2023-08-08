@@ -29,11 +29,13 @@ public:  // 用于写typedef或者静态常量等。
         FRIEND_LIST = 101,  // 好友列表
         GROUP_LIST = 102,  // 群组列表
         FRIEND_CHAT = 103,  // 请求获取好友之间的聊天历史记录。
+        GROUP_CHAT = 104,  // 请求获取群组之间的聊天历史记录。
         SUCCESS = 200,  // 操作成功
         ADD_FRIEND_REQUEST = 201,  // 添加好友的请求。
         ADD_GROUP_REQUEST = 202,  // 添加群组的请求。
         CREATE_GROUP_REQUEST = 301,  // 创建群组的请求。
         FORCE_FRIEND_LIST = 401,  // 强制推送好友列表
+        FORCE_GROUP_LIST = 402,  // 强制推送群组名单
     };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。
@@ -88,6 +90,8 @@ private:  // 函数区域
     bool processAddGroupRequest();  // 发送添加群组的请求。
 
     bool chatWithFriend();  // 切换聊天状态为好友聊天状态。
+
+    bool chatWithGroup();  // 切换聊天状态为群组聊天状态。
 public:
     Request() {}
 
@@ -126,6 +130,10 @@ public:
     void ForceUpdateSendAllFriends();  // 强制推送好友名单，前端必须更新。
 
     void ForceSendMessage(int sourceId, int destId);  // 强制刷新前端信息。
+
+    void ForceSendGroupMessage(int groupId);  // 强制刷新前端的群组聊天记录。
+
+    void ForceUpdateSendAllGroups();  // 强制推送好友名单，前端必须更新。
 };
 
 #endif //SWAN_REQUEST_H

@@ -29,7 +29,7 @@
 
         function Connect() {
             try {
-                socket = new WebSocket('ws://10.12.44.139:8081');
+                socket = new WebSocket('ws://192.168.43.116:8081');
             } catch (e) {
                 console.log("连接出现error:" + e);
                 return;
@@ -277,7 +277,7 @@
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "group" + i)[0];
                 var parts = innerContent.split(':');
-                var num = parts[0], text = parts[1];
+                var num = parts[0], text = parts[1], unreadCount = parts[2];
                 if (groupIds.has(num)) {  // 已经存在的就直接略过。
                     continue;
                 }
@@ -287,9 +287,9 @@
                 var newElement = document.createElement("li");
                 // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
                 newElement.innerHTML =
-                    `<li class="list-item" onclick="chatWithGroup(` + num + `);">`
+                    `<li class="list-item" onclick="chatWithGroup(` + num + `, this);">`
                     +
-                    num + "   " + text
+                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
                 dynamic_body.appendChild(newElement);
@@ -300,6 +300,32 @@
                 var innerContent = extractTagContent(content, "friendChat" + i)[0];
                 var parts = innerContent.split('$:$');
                 var memoId = parts[0], sourceId = parts[1], sourceName = parts[2], message = parts[3], time = parts[4];
+                if (chatMemoIds.has(memoId)) {  // 已经存在的就直接略过。
+                    continue;
+                }
+                chatMemoIds.add(memoId);
+
+                var dynamic_body = document.getElementById("chatContainerUl");
+                var newElement = document.createElement("li");
+                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+                newElement.innerHTML =
+                    `<li class="list-item">`
+                    +
+                    '[' + time + ']' + sourceName + "===>" + message
+                    +
+                    `</li>`;
+                dynamic_body.appendChild(newElement);
+            }
+            var container = document.getElementById("chatContainerDiv");
+            container.scrollTop = container.scrollHeight;
+            container = document.getElementById("chatContainerUl");
+            container.scrollTop = container.scrollHeight;
+        } else if (status == 104) {  // 刷新聊天记录为群组之间聊天记录。
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "groupChat" + i)[0];
+                var parts = innerContent.split('$:$');
+                var memoId = parts[0], groupId = parts[1], sourceId = parts[2], sourceName = parts[3], message = parts[4], time = parts[5];
                 if (chatMemoIds.has(memoId)) {  // 已经存在的就直接略过。
                     continue;
                 }
@@ -408,6 +434,31 @@
                 // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
                 newElement.innerHTML =
                     `<li class="list-item" onclick="chatWithFriend(` + num + `, this);">`
+                    +
+                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
+                    +
+                    `</li>`;
+                dynamic_body.appendChild(newElement);
+            }
+        } else if(status == 402) {  // 强制更新前端群组列表。
+            groupIds.clear();
+            removeAllChild("groupContainerUl");
+            alert(1);
+            var nums = extractTagContent(content, "nums");
+            for (var i = 0; i < nums; ++i) {
+                var innerContent = extractTagContent(content, "group" + i)[0];
+                var parts = innerContent.split(':');
+                var num = parts[0], text = parts[1], unreadCount = parts[2];
+                if (groupIds.has(num)) {  // 已经存在了，就直接略过。
+                    continue;
+                }
+                groupIds.add(num);  // 记录所有好友的名单。
+
+                var dynamic_body = document.getElementById("groupContainerUl");
+                var newElement = document.createElement("li");
+                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+                newElement.innerHTML =
+                    `<li class="list-item" onclick="chatWithGroup(` + num + `, this);">`
                     +
                     num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
@@ -563,7 +614,7 @@
             friendIds.delete(sourceId.toString());
             // 获取父元素并移除
             var listItem = li.parentElement;
-            listItem.removeChild(li);  // 删除待处理的请求。
+            listItem.removeChild(li);  // 删除好友的详细信息列。
         }
         chatId = sourceId;
         isGroup = false;
@@ -574,7 +625,7 @@
      * 切换为和group聊天。
      * @param groupId
      */
-    function chatWithGroup(groupId) {
+    function chatWithGroup(groupId, li) {
         var context = "";
         context += createTag("url", "/chatWithGroup");
         context += createTag("session", session);
@@ -583,6 +634,10 @@
         if (chatId != groupId) {  // 界面上清空列表，并清楚set
             removeAllChild("chatContainerUl");
             chatMemoIds.clear();
+            groupIds.delete(groupId.toString());
+            // 获取父元素并移除
+            var listItem = li.parentElement;
+            listItem.removeChild(li);  // 删除群组的详细信息列。
         }
         chatId = groupId;
         isGroup = true;
