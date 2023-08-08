@@ -6,11 +6,7 @@
 
     <style>
         .container {
-            margin-top: 50px;
-            width: 400px;
-            height: 200px;
-            border: 1px solid #ccc;
-            overflow: auto;
+            
         }
 
         .list {
@@ -121,7 +117,7 @@
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML =
                 `
-                <div class="container" id="groupContainerDiv">
+                <div class="container" id="groupContainerDiv" style="width: 15vw;height: 42vh;border: 2px solid #ccc;position: absolute;top: 53vh;left: 1vw;">
                   <ul class="list" id="groupContainerUl">
 
                   </ul>
@@ -138,7 +134,7 @@
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML =
                 `
-                <div class="container" id="personContainerDiv">
+                <div class="container" id="personContainerDiv" style="width: 15vw;height: 42vh;border: 2px solid #ccc;position: absolute;top: 6vh;left: 1vw;">
                   <ul class="list" id="personContainerUl">
 
                   </ul>
@@ -154,7 +150,7 @@
 
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML =
-                `<div class="container" id="requestContainerDiv" style="float:right;margin-top: -453px;">
+                `<div class="container" id="requestContainerDiv" style="width: 15vw;height: 40vh;border: 2px solid #ccc;position: absolute;top: 6vh;right: 1vw;">
                   <ul class="list" id="requestContainerUl">
 
                   </ul>
@@ -170,14 +166,9 @@
 
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML =
-                `<div class="container" id="chatContainerDiv" style="overflow:auto; height: 550px;float: right;margin-right: 420px;margin-top: -453px;width: 682px;">
+                `<div class="container" id="chatContainerDiv" style="width: 60vw;height: 70vh;border: 2px solid #ccc;position: absolute;top: 6vh;left: 20vw;">
                   <ul class="list" id="chatContainerUl">
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
-                    <li class="list-item">Item 1</li>
+                    
                   </ul>
                 </div>`;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
@@ -190,14 +181,14 @@
             var newDiv = document.createElement("message");
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML = `
-                <input id="addFriendText" type="text" style="float: left;margin-top: -488px;height: 19px;">
-                <button id="addFriendButton" onclick="addFriend();" style="float: left;margin-top: -488px;margin-left: 180px;">添加好友</button>
-                <input id="addGroupText" type="text" style="float: left;margin-top: -587px;margin-left: 260px;height: 19px;">
-                <button id="addGroupButton" onclick="addGroup();" style="float: left;margin-top: -587px;margin-left: 440px;">添加群组</button>
-                <input id="createGroupText" type="text" style="float: left;margin-top: -587px;margin-left: 518px;height: 19px;">
-                <button id="createGroupButton" onclick="createGroupByName();" style="float: left;margin-top: -587px;margin-left: 704px;">创建群组</button>
-                <input id="message" style="float: right;margin-right: 500px;margin-top: 30px;width: 600px;height: 30px;">
-                <button id="sendMessageButton" onclick="sendMessage();" style="float: right;margin-right: 419px;margin-top: -35px;height: 35px;">发送信息</button>
+                <input id="addFriendText" type="text" style="position: absolute;top: 2vh;left: 1vw;width: 10vw;height: 1.8vh;">
+                <button id="addFriendButton" onclick="addFriend();" style="position: absolute;top: 2vh;right: 84vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">添加好友</button>
+                <input id="addGroupText" type="text" style="position: absolute;top: 2vh;left: 20vw;width: 10vw;height: 1.8vh;">
+                <button id="addGroupButton" onclick="addGroup();" style="position: absolute;top: 2vh;right: 65vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">添加群组</button>
+                <input id="createGroupText" type="text" style="position: absolute;top: 2vh;left: 40vw;width: 10vw;height: 1.8vh;">
+                <button id="createGroupButton" onclick="createGroupByName();" style="position: absolute;top: 2vh;right: 45vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">创建群组</button>
+                <input id="message" style="position: absolute;top: 77vh;left: 20vw;width: 60vw;height: 18vh;padding: 0;border: 2px solid #ccc;">
+                <button id="sendMessageButton" onclick="sendMessage();" style="position: absolute;top: 86vh;right: 20.5vw;width: 4vw;height: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">发送信息</button>
             `;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
             var bodyElement = document.querySelector("body");
