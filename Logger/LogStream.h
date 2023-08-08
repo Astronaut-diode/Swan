@@ -16,7 +16,7 @@ class LogStream {
 public:  // 用于写typedef或者静态常量等。
     static const int kLogStreamMaxLength = 4 * 1024;  // 每一次写日志的最大内容。
 private:  // 变量区域
-
+    int count_;  // 记录当前已经写入了多少个字符，避免越界操作。
 public:
 
 private:  // 函数区域

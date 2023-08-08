@@ -213,13 +213,13 @@ int Request::receiveWebSocketRequest() {
     int readCount = 0, ret = -1;
     while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
     fetch_websocket_info(buffer_);
-    char log[1024];
-    snprintf(log, 1024,
+    char log[4096];
+    snprintf(log, 4096,
              "WEBSOCKET PROTOCOL  "
              "FIN: %d  "
              "OPCODE: %d  "
              "MASK: %d  "
-             "PAYLOADLEN: %d  "
+             "PAYLOADLEN: %lu  "
              "PAYLOAD: %s",
              fin_, opcode_, mask_, payload_length_, payload_);
     LOG << clientFd_ << "接收到的信息" << log << "\n";
@@ -562,8 +562,8 @@ bool Request::sendMessage() {
     std::string message = analysisTag(payload_, "message");
     if (session == session_ && stoi(sourceId) == userId_) {
         if (isGroup == "false") {
-            char *sql = new char[256];
-            snprintf(sql, 256,
+            char *sql = new char[1024];
+            snprintf(sql, 1024,
                      "insert into friendMessage(sourceId, destId, content, sendTime) values (%d, %d, '%s', now());",
                      stoi(sourceId), stoi(destId), message.c_str());  // 记录消息内容。
             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
@@ -572,8 +572,8 @@ bool Request::sendMessage() {
             ForceSendMessage(stoi(destId), stoi(sourceId));  // 强制更新前端聊天框内容。
             return true;
         } else {
-            char *sql = new char[256];
-            snprintf(sql, 256,
+            char *sql = new char[1024];
+            snprintf(sql, 1024,
                      "insert into groupMessage(sourceId, innerSourceId, content, sendTime) values (%d, %d, '%s', now());",
                      stoi(destId), stoi(sourceId), message.c_str());  // 记录消息内容(此时的destId就是groupId)
             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);

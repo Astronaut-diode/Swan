@@ -12,7 +12,9 @@ Poller::Poller() {
 }
 
 Poller::~Poller() {
-
+    if(fcntl(pollerFd_, F_GETFL) == -1) {  // 关闭poller的文件描述符。
+        close(pollerFd_);
+    }
 }
 
 /**

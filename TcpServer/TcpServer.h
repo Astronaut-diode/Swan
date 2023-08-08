@@ -25,7 +25,7 @@ public:  // 用于写typedef或者静态常量等。
     const char *kSubThreadName = "subThread-";
     static int kNumber;
 private:  // 变量区域
-    ThreadList threadList_;  // 记录所有的子线程
+    std::vector<Thread*> threadList_;  // 记录所有的子线程
     std::vector<Monitor *> monitors_;  // 记录所有的monitor。
     sem_t latch_;
     std::map<int, std::shared_ptr<TcpConnection>> sharedConnections_;  // 所有的连接，并且使用了shared指针。;

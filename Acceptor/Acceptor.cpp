@@ -61,7 +61,9 @@ Acceptor::Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConn
 }
 
 Acceptor::~Acceptor() {
-
+    for(int i = 0; i < 6; ++i) {  // 释放六个连接。
+        Redis::get_singleton_()->ReleaseConnection(redisContexts_[i]);
+    }
 }
 
 /**

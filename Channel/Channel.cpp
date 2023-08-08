@@ -28,7 +28,7 @@ Channel::Channel(int fd) {
 }
 
 Channel::~Channel() {
-
+    // 文件描述符的关闭已经在TCP中处理过了，不再处理。
 }
 
 void Channel::handleEvent() {  // 当epoll接收到事件的是，分给每个channel自己执行。

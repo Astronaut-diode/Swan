@@ -149,7 +149,7 @@ void Response::sendWebSocketResponseBuffer(int status, const std::string &messag
     std::string bufferTag = createTagMessage("message", message);
     std::string content = statusTag + bufferTag + tags;
     // 接下来构建需要返回的请求数据帧。
-    int len = content.size(), frameLength = 1 + 1;
+    ssize_t len = content.size(), frameLength = 1 + 1;
     long long count;  // frameLength表示要创建的字符串长度，第一个1代表fin(1位)、RSV(3位)、以及opcode（4位)。第二个代表mask+基础的payload(七位)。
     if (len <= 125) {  // 只用一个字节表示payLoad。
         frameLength = frameLength + len;

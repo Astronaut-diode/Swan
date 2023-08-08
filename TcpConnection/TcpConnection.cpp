@@ -51,6 +51,7 @@ void TcpConnection::handleClose() {
  * connectionChannel受到信息以后的回调事件。
  */
 void TcpConnection::handleRead() {
+    std::shared_ptr<TcpConnection> tmp = shared_from_this();  // 避免执行时被析构。
     if (connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
         if (monitor_) {
             int ret = request_->receiveWebSocketRequest();

@@ -18,7 +18,7 @@ Config::Config() {  // 用于赋值各种参数，别的模块可以通过单例
     redis_host_ = "localhost";
     redis_port_ = 6379;
     redis_password_ = "123456";
-    redis_pool_max_count_ = 8;
+    redis_pool_max_count_ = 6 + 8;  // 6是监听的信道，8是多余的连接用作连接池。
     redis_generator_session_length_ = 16;
 }
 

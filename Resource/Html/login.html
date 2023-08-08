@@ -6,7 +6,7 @@
 
     <style>
         .container {
-            
+            overflow: auto;
         }
 
         .list {
@@ -16,6 +16,8 @@
 
         .list-item {
             padding: 10px;
+            white-space: pre-wrap;
+            word-break: break-word;
             border-bottom: 1px solid #ccc;
         }
     </style>
@@ -181,13 +183,13 @@
             var newDiv = document.createElement("message");
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML = `
-                <input id="addFriendText" type="text" style="position: absolute;top: 2vh;left: 1vw;width: 10vw;height: 1.8vh;">
+                <input id="addFriendText" type="text" style="position: absolute;top: 2vh;left: 1vw;width: 10vw;height: 1.8vh;" maxlength="8">
                 <button id="addFriendButton" onclick="addFriend();" style="position: absolute;top: 2vh;right: 84vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">添加好友</button>
-                <input id="addGroupText" type="text" style="position: absolute;top: 2vh;left: 20vw;width: 10vw;height: 1.8vh;">
+                <input id="addGroupText" type="text" style="position: absolute;top: 2vh;left: 20vw;width: 10vw;height: 1.8vh;" maxlength="8">
                 <button id="addGroupButton" onclick="addGroup();" style="position: absolute;top: 2vh;right: 65vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">添加群组</button>
-                <input id="createGroupText" type="text" style="position: absolute;top: 2vh;left: 40vw;width: 10vw;height: 1.8vh;">
+                <input id="createGroupText" type="text" style="position: absolute;top: 2vh;left: 40vw;width: 10vw;height: 1.8vh;" maxlength="8">
                 <button id="createGroupButton" onclick="createGroupByName();" style="position: absolute;top: 2vh;right: 45vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">创建群组</button>
-                <input id="message" style="position: absolute;top: 77vh;left: 20vw;width: 60vw;height: 18vh;padding: 0;border: 2px solid #ccc;">
+                <textarea id="message" style="position: absolute;top: 77vh;left: 20vw;width: 60vw;height: 18vh;padding: 0;border: 2px solid #ccc;" maxlength="512" wrap="soft"></textarea>
                 <button id="sendMessageButton" onclick="sendMessage();" style="position: absolute;top: 86vh;right: 20.5vw;width: 4vw;height: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">发送信息</button>
             `;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
@@ -261,7 +263,7 @@
                     num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
-                dynamic_body.appendChild(newElement);
+                dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
         } else if (status == 102) {  // 刷新群组列表。
             var nums = extractTagContent(content, "nums");
@@ -283,7 +285,7 @@
                     num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
-                dynamic_body.appendChild(newElement);
+                dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
         } else if (status == 103) {  // 刷新聊天记录为好友之间聊天记录。
             var nums = extractTagContent(content, "nums");
@@ -429,7 +431,7 @@
                     num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
-                dynamic_body.appendChild(newElement);
+                dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
         } else if(status == 402) {  // 强制更新前端群组列表。
             groupIds.clear();
@@ -454,7 +456,7 @@
                     num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
-                dynamic_body.appendChild(newElement);
+                dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
         }
     }

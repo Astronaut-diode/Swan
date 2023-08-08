@@ -28,7 +28,11 @@ void TaskScheduler::dump() {
         buffer << "[" << i << "]===>";
         for (std::unordered_set<sharedWeakTcpConnection>::iterator ite = (*timeWheel_)[i].begin();
              ite != (*timeWheel_)[i].end(); ++ite) {
-            buffer << static_cast<void *>((*ite).get()->weakPtr_.lock().get()) << ":" << (*ite).use_count() << " ";
+            if((*ite).get()) {
+                buffer << static_cast<void *>((*ite).get()->weakPtr_.lock().get()) << ":" << (*ite).use_count() << " ";
+            } else {
+                buffer << 0x0 << ":" << (*ite).use_count() << " ";
+            }
         }
         buffer << "\n";
     }

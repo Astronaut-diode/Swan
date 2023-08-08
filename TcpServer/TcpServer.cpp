@@ -15,8 +15,7 @@ TcpServer::TcpServer(InsertToTimeWheelCallBack insertToTimeWheelCallBack,
         char tmp[64]{'\0'};
         strcpy(tmp, kSubThreadName);
         strcat(tmp, std::to_string(i).c_str());  // 构建线程的名字。
-        threadList_[i] = std::make_unique<Thread>(tmp,
-                                                  std::bind(&TcpServer::launchSubThread, this));  // 创建对应的线程用例。
+        threadList_[i] = new Thread(tmp, std::bind(&TcpServer::launchSubThread, this));  // 创建对应的线程用例。
         threadList_[i]->createThread();  // 创建并启动子线程，让其执行给定的任务。
         sem_wait(&latch_);  // 线程一定要一个个创建。
     }

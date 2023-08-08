@@ -5,6 +5,7 @@
 #include "LogStream.h"
 
 extern AsyncLog asyncLog;
+
 LogStream::LogStream(const char *fileName, int codeLine) {
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();  // 获取当前时间点
     time_t time = std::chrono::system_clock::to_time_t(now);  // 将时间点转换为本地时间
@@ -18,8 +19,10 @@ LogStream::LogStream(const char *fileName, int codeLine) {
     int second = localTime.tm_sec;
     char pthreadName[16];  // 获取当前线程的名字
     pthread_getname_np(pthread_self(), pthreadName, sizeof(pthreadName));
-    snprintf(stream_, kLogStreamMaxLength, "[%d-%2d-%2d %2d:%2d:%2d %s:%s:%4d] ", year, month, day, hour, minute, second,
+    snprintf(stream_, kLogStreamMaxLength, "[%d-%2d-%2d %2d:%2d:%2d %s:%s:%4d] ", year, month, day, hour, minute,
+             second,
              pthreadName, fileName, codeLine);  // 设置日志的每一行打头的内容。
+    count_ = strlen(stream_);
 }
 
 /**
@@ -28,15 +31,17 @@ LogStream::LogStream(const char *fileName, int codeLine) {
  * @return
  */
 LogStream &LogStream::operator<<(const char *data) {
-    strcat(stream_, data);
+    strncat(stream_, data, std::min(static_cast<int>(strlen(data)), kLogStreamMaxLength - count_));
+    count_ += std::min(static_cast<int>(strlen(data)), kLogStreamMaxLength - count_);  // 解决日志太长的问题。
     return *this;
 }
 
 // 重载 << 运算符模板，用于输出指针的地址
-LogStream& LogStream::operator<<(const void* ptr) {
+LogStream &LogStream::operator<<(const void *ptr) {
     std::ostringstream oss;
     oss << ptr;
-    strcat(stream_, oss.str().c_str());
+    strncat(stream_, oss.str().c_str(), std::min(static_cast<int>(strlen(oss.str().c_str())), kLogStreamMaxLength - count_));
+    count_ += std::min(static_cast<int>(strlen(oss.str().c_str())), kLogStreamMaxLength - count_);  // 解决日志太长的问题。
     return *this;
 }
 
