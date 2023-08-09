@@ -10,5 +10,7 @@
 
 4.main.cpp:9中的true代表日志输出到控制台，false代表输出到日志文件。
 
-5.使用makefile编译,命令./Swan [监听的端口号]即可启动。
+5.如果有nginx服务，可以参考nginx.conf中的配置，并启动对应sbin下的nginx，如[/usr/local/nginx/sbin/nginx];后面访问localhost即可。
+
+6.使用makefile编译,命令./Swan [监听的端口号]即可启动。
 
