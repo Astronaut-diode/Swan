@@ -565,6 +565,7 @@ bool Request::chatWithFriend() {
                                      memo[i][4]);  // 避免切割到时间，使用$:$
         }
         tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+        tags += createTagMessage("username", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserNameByUserId(stoi(sourceId)));
         response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
         return true;
     }
@@ -642,6 +643,7 @@ void Request::ForceSendMessage(int sourceId, int destId) {
                                  memo[i][0] + "$:$" + memo[i][1] + "$:$" + memo[i][2] + "$:$" + memo[i][3] + "$:$" +
                                  memo[i][4]);  // 避免切割到时间，使用$:$
     }
+    tags += createTagMessage("username", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserNameByUserId(sourceId));
     tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
     response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
 }
@@ -669,6 +671,7 @@ bool Request::chatWithGroup() {
                                      memo[i][4] + "$:$" + memo[i][5]);  // 避免切割到时间，使用$:$
         }
         tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+        tags += createTagMessage("groupName", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findGroupNameByGroupId(stoi(sourceId)));
         response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_CHAT, "群组的聊天记录", tags);
         return true;
     }
@@ -692,6 +695,7 @@ void Request::ForceSendGroupMessage(int groupId) {
                                  memo[i][4] + "$:$" + memo[i][5]);  // 避免切割到时间，使用$:$
     }
     tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
+    tags += createTagMessage("groupName", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findGroupNameByGroupId(groupId));
     response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_CHAT, "群组的聊天记录", tags);
 }
 

@@ -76,6 +76,10 @@ public:
     int findAllUnreadGroupMessageCount(int sourceId, int destId);  // 查询(sourceId, destId)有多少条未读取的内容，只要数量。
 
     std::vector<int> findAllMemberInGroup(int groupId);  // 找到对应群聊中所有的用户id。。
+
+    std::string findGroupNameByGroupId(int groupId);  // 查询群组的名字。
+
+    std::string findUserNameByUserId(int userId);  // 查询用户的名字。
 };
 
 #endif
