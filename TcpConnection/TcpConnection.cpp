@@ -34,6 +34,7 @@ Channel *TcpConnection::getChannel() {
  * 在TcpServer中的动态连接的数组中删除，因为shared_ptr为0了，所以就会析构自己。
  */
 void TcpConnection::handleClose() {
+    std::shared_ptr<TcpConnection> tmp = shared_from_this();  // 避免执行时被析构。
     connectionChannel_->disableWrite();
     connectionChannel_->disableRead();
     monitor_->poller_.updateEpollEvents(EPOLL_CTL_DEL, connectionChannel_);
@@ -55,6 +56,10 @@ void TcpConnection::handleRead() {
     if (connectionStatement_ == CONNECTION_STATEMENT::WebSocket) {
         if (monitor_) {
             int ret = request_->receiveWebSocketRequest();
+            if(ret == -2) {  // 关闭连接。
+                handleClose();
+                return;
+            }
             if (ret != -1) {
                 userId_ = ret;
                 getConnectionSessionsCallBack_().insert(std::make_pair(ret, *this));

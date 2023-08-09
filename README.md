@@ -6,10 +6,9 @@
 
 2.设置Config.cpp中的Config构造函数，其中包含了mysql以及redis的连接参数。
 
-3.设置Acceptor.h:24行的服务器端监听端口。
+3.修改/Resource/Html/login.html中30行的websocket连接地址为正确的服务器连接地址。
 
-4.修改/Resource/Html/login.html中30行的websocket连接地址为正确的服务器连接地址。
+4.main.cpp:9中的true代表日志输出到控制台，false代表输出到日志文件。
 
-5.main.cpp:9中的true代表日志输出到控制台，false代表输出到日志文件。
+5.使用makefile编译,命令./Swan [监听的端口号]即可启动。
 
-6.使用makefile编译运行即可。

@@ -35,18 +35,28 @@ void Request::reset() {
  */
 bool Request::receiveHTTPRequest() {
     int readCount = 0;
-    while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
+    while (true) {
+        readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0);
+        if (readCount <= 0) {
+            break;
+        } else {
+            readNextIndex_ += readCount;
+        }
+    }
     LOG << "接收到的HTTP请求" << buffer_;
     if (strstr(buffer_, "/favicon")) {  // 网页图标。
         response_->sendResourceFile(Response::SEND_TYPE::ICON, "/Resource/Img/favicon.ico");
+        reset();
         return false;
     } else if (strstr(buffer_, "websocket")) {  // 请求建立连接。
         fetchHTTPInfo();  // 捕获请求头信息。
         parseStr(response_->buffer_);
         response_->establishWebSocketConnection();
+        reset();
         return true;
     } else {  // 默认的初始连接。
         response_->sendResourceFile(Response::SEND_TYPE::HTML, "/Resource/Html/login.html");
+        reset();
         return false;
     }
 }
@@ -211,7 +221,17 @@ std::string Request::analysisTag(char *buffer, std::string tag) {
  */
 int Request::receiveWebSocketRequest() {
     int readCount = 0, ret = -1;
-    while ((readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0)) != -1);
+    while (true) {
+        readCount = recv(clientFd_, buffer_ + readNextIndex_, kReadBufferMaxLength - readNextIndex_, 0);
+        if (readCount == 0) {
+            return -2;  // 代表websocket连接已经被关闭。
+        } else if (readCount == -1) {
+            break;
+        } else {
+            readNextIndex_ += readCount;
+        }
+    }
+
     fetch_websocket_info(buffer_);
     char log[4096];
     snprintf(log, 4096,
@@ -293,7 +313,7 @@ int Request::receiveWebSocketRequest() {
         } else {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "信息发送失败");
         }
-    }  else if (strcmp("/chatWithGroup", url_) == 0) {
+    } else if (strcmp("/chatWithGroup", url_) == 0) {
         if (chatWithGroup()) {
             response_->sendWebSocketResponseBuffer(RET_CODE::SUCCESS, "群组聊天列表切换成功");
         } else {
@@ -444,7 +464,8 @@ void Request::sendAllGroups() {
         int count = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadGroupMessageCount(
                 ids[i].first, userId_);
         tags += createTagMessage("group" + std::to_string(i), std::to_string(ids[i].first) + ":" +
-                                                              ids[i].second + ":" + std::to_string(count));  // 群组信息的格式group[0->n - 1]是tag，信息是id:name:count
+                                                              ids[i].second + ":" + std::to_string(
+                count));  // 群组信息的格式group[0->n - 1]是tag，信息是id:name:count
     }
     tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组。
     response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_LIST, "群组列表", tags);
@@ -578,8 +599,9 @@ bool Request::sendMessage() {
                      stoi(destId), stoi(sourceId), message.c_str());  // 记录消息内容(此时的destId就是groupId)
             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
             // todo:找出目标群组中所有的人，然后告知他们，有新消息。
-            std::vector<int> members = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllMemberInGroup(stoi(destId));
-            for(int member: members) {
+            std::vector<int> members = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllMemberInGroup(
+                    stoi(destId));
+            for (int member: members) {
                 Redis::get_singleton_()->publish("groupMessage", stoi(destId), member);  // 群组通知全体成员有信息。
             }
             delete[] sql;
@@ -623,7 +645,6 @@ void Request::ForceSendMessage(int sourceId, int destId) {
     tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
     response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
 }
-
 
 
 /**
@@ -686,7 +707,8 @@ void Request::ForceUpdateSendAllGroups() {
         int count = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllUnreadGroupMessageCount(
                 ids[i].first, userId_);
         tags += createTagMessage("group" + std::to_string(i), std::to_string(ids[i].first) + ":" +
-                                                              ids[i].second + ":" + std::to_string(count));  // 群组信息的格式group[0->n - 1]是tag，信息是id:name:count
+                                                              ids[i].second + ":" + std::to_string(
+                count));  // 群组信息的格式group[0->n - 1]是tag，信息是id:name:count
     }
     tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组。
     response_->sendWebSocketResponseBuffer(RET_CODE::FORCE_GROUP_LIST, "群组列表", tags);

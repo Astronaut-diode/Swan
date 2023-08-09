@@ -21,8 +21,9 @@ typedef std::function<bool(int, int, int)> SendInLoopCallBack;  // 发送信息
 
 class Acceptor {
 public:  // 用于写typedef或者静态常量等。
-    static const int kPort = 8081;
+
 private:  // 变量区域
+    int kPort;
     int acceptorFd_;  // 用于唤醒使用的文件描述符。
     Channel *acceptorChannel_;  // 该文件描述符相关联的channel。
     Address acceptorAddress_;  // 监听使用的网络地址。
@@ -42,7 +43,8 @@ private:  // 函数区域
 
     void subscribeChannelReadCallback(int i);  // 当redis的订阅频道收到信息以后，使用这个函数。
 public:
-    Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConnectionCallBack, SendInLoopCallBack sendInLoopCallBack);
+
+    Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConnectionCallBack, SendInLoopCallBack sendInLoopCallBack, int port);
 
     ~Acceptor();
 
