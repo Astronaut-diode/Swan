@@ -43,6 +43,7 @@ private:  // 函数区域
 
     void subscribeChannelReadCallback(int i);  // 当redis的订阅频道收到信息以后，使用这个函数。
 public:
+
     Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConnectionCallBack, SendInLoopCallBack sendInLoopCallBack, int port);
 
     ~Acceptor();

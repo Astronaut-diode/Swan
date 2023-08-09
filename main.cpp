@@ -6,7 +6,7 @@
 #include "MysqlConnectionPool/MysqlConnectionPool.h"
 #include "Redis/Redis.h"
 
-AsyncLog asyncLog(true);  // 定义为全局的变量,方便LogStream析构的时候，将内容写入到异步线程中。
+AsyncLog asyncLog(false);  // 定义为全局的变量,方便LogStream析构的时候，将内容写入到异步线程中。
 
 int main(int argc, char **argv) {
     Config::get_singleton_();
