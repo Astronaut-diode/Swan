@@ -15,6 +15,7 @@
 #include <sys/syscall.h>
 #include <cstring>
 #include <sys/socket.h>
+#include "../Config/Config.h"
 #include "../Logger/LogStream.h"
 
 class Response {

@@ -27,7 +27,7 @@
 
         function Connect() {
             try {
-                socket = new WebSocket('ws://192.168.43.116:8081');
+                socket = new WebSocket('ws://255.255.255.255:99999');  // 准备进行文本改变，用后台代码设置连接地址。
             } catch (e) {
                 console.log("连接出现error:" + e);
                 return;

@@ -25,10 +25,17 @@ void Response::reset() {
 void Response::sendResourceFile(Response::SEND_TYPE sendType, const char *fileName) {
     getcwd(response_file_path_, kFilePathMaxLength);
     stat(strcat(response_file_path_, fileName), &response_file_stat_);
-    int fd = open(response_file_path_, O_RDONLY);
-    map_response_file_address_ = (char *) mmap(0, response_file_stat_.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    int fd = open(response_file_path_, O_RDONLY | O_RDWR);
+    map_response_file_address_ = (char *) mmap(0, response_file_stat_.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd,
+                                               0);
     close(fd);  // 映射目标文件。
-
+    char *target = strstr(map_response_file_address_, "255.255.255.255:99999");
+    if (target) {
+        memset(target, ' ', 21);
+        std::string tmp =
+                Config::get_singleton_()->server_ip_ + +":" + std::to_string(Config::get_singleton_()->server_port_);
+        strncpy(target, tmp.c_str(), tmp.size());
+    }
     const char *status_phrase{"OK\0"};  // 开始构造需要发送的内容。
     AddLine(200, status_phrase);
     if (sendType == SEND_TYPE::HTML) {
@@ -190,7 +197,7 @@ void Response::sendWebSocketResponseBuffer(int status, const std::string &messag
         sendCount += sendNumber;
     }
     LOG << "向" << clientFd_ << "发送了" << buffer[1] << buffer + 2 << "\n";
-    delete [] buffer;
+    delete[] buffer;
 }
 
 /**

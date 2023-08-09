@@ -9,7 +9,13 @@
 AsyncLog asyncLog(true);  // 定义为全局的变量,方便LogStream析构的时候，将内容写入到异步线程中。
 
 int main(int argc, char **argv) {
-    Config::get_singleton_();
+    assert(argc == 3);
+    std::string ip = argv[1];
+    if(ip == "localhost") {
+        ip = "127.0.0.1";
+    }
+    int port = atoi(argv[2]);
+    Config::get_singleton_()->setServerAddress(ip, port);
     TaskScheduler taskScheduler;
     TcpServer tcpServer(std::bind(&TaskScheduler::insertToConnections, &taskScheduler, std::placeholders::_1),
                         std::bind(&TaskScheduler::updateToConnections, &taskScheduler, std::placeholders::_1));
@@ -20,7 +26,7 @@ int main(int argc, char **argv) {
                       std::bind(&TcpServer::distributeConnection, &tcpServer, std::placeholders::_1),
                       std::bind(&TcpServer::sendInLoop, &tcpServer, std::placeholders::_1, std::placeholders::_2,
                                 std::placeholders::_3),
-                      atoi(argv[1]));
+                      ip, port);
     monitor.loop();
     return 0;
 }

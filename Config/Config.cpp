@@ -41,3 +41,7 @@ Config *Config::get_singleton_() {
     return singleton_;
 }
 
+void Config::setServerAddress(std::string ip, int port) {
+    server_ip_ = ip;
+    server_port_ = port;
+}

@@ -22,14 +22,14 @@ void Acceptor::setReusePort(bool on) {
 }
 
 Acceptor::Acceptor(Monitor *monitor, DistributeConnectionCallBack distributeConnectionCallBack,
-                   SendInLoopCallBack sendInLoopCallBack, int port) {
+                   SendInLoopCallBack sendInLoopCallBack, std::string ip, int port) {
     mainMonitor_ = monitor;
     acceptorFd_ = createListenSocket();
     Utils::setNonBlocking(acceptorFd_);  // 设置非阻塞。
     setReuseAddr(true);
     setReusePort(true);
     kPort = port;
-    acceptorAddress_ = Address(kPort);  // 需要监听的地址。
+    acceptorAddress_ = Address(kPort, ip);  // 需要监听的地址。
     LOG << "开始监听端口:" << kPort << "\n";
     int ret = ::bind(acceptorFd_, (sockaddr *) &acceptorAddress_.getAddr(),
                      static_cast<socklen_t>(sizeof(struct sockaddr_in)));

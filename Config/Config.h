@@ -36,5 +36,10 @@ public:
     std::string redis_password_;
     unsigned redis_pool_max_count_;
     unsigned redis_generator_session_length_;
+
+
+    void setServerAddress(std::string ip, int port);
+    std::string server_ip_;  // 服务器ip
+    int server_port_;
 };
 #endif
