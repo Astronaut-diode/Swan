@@ -33,7 +33,7 @@
             try {
                 socket = new WebSocket('ws://255.255.255.255:99999');  // 准备进行文本改变，用后台代码设置连接地址。
             } catch (e) {
-                console.log("连接出现error:" + e);
+                alert("连接出现错误，清重试");
                 return;
             }
             socket.onopen = sOpen;
@@ -54,7 +54,7 @@
         }
 
         function sClose(e) {
-            console.log("connect closed2:" + e.code);
+            alert("连接已断开，清刷新重试");
         }
 
         function Send() {
@@ -227,8 +227,8 @@
 
 
 <div id="loginForm">
-    <input id="username" type="text" maxlength="4">
-    <input id="password" type="password" maxlength="8">
+    <input id="username" type="text" maxlength="8">
+    <input id="password" type="password" maxlength="16">
     <button id="register" onclick="register();">注册</button>
     <button id="login" onclick="login();">登录</button>
 </div>
@@ -379,6 +379,8 @@
                 alert(message);
             } else if(message == "群组添加请求处理成功" || message == "群组添加请求处理失败") {
                 alert(message);
+            } else if(message == "信息发送失败") {
+                alert("输入含有非法字符，信息发送失败");
             }
         } else if (status == 201) {  // 显示请求添加我为好友的请求
             var nums = extractTagContent(content, "nums")[0];
