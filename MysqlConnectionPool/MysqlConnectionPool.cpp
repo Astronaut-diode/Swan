@@ -210,7 +210,8 @@ bool MysqlConnectionPool::sendAddFriendRequest(int sourceId, int destId, bool pr
             return false;
         }
         assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
-        snprintf(sql, 256, "select * from friendRelation where sourceId = %d and destId = %d;", sourceId, destId);  // 再判断是否已经添加过了。
+        snprintf(sql, 256, "select * from friendRelation where sourceId = %d and destId = %d;", sourceId,
+                 destId);  // 再判断是否已经添加过了。
         mysql_query(conn, sql);
         res = mysql_store_result(conn);
         ret = mysql_num_rows(res) == 0;
@@ -301,6 +302,13 @@ bool MysqlConnectionPool::createGroup(int sourceId, const std::string &groupName
         snprintf(sql, 256, "select * from `group` where groupName = '%s';", groupName.c_str());
         mysql_query(conn, sql);
         MYSQL_RES *res = mysql_store_result(conn);
+        if(!res) {  // 直接判断是否创建成功即可。
+            mysql_free_result(res);  // 及时的释放结果。
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            delete[] sql;
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
         ret = mysql_num_rows(res) == 0;  // 判断查询结果是否为空，如果不为空，那就说明存在重名。
         mysql_free_result(res);  // 及时的释放结果。
         if (!ret) {
@@ -396,7 +404,8 @@ bool MysqlConnectionPool::sendAddGroupRequest(int sourceId, int destId, bool pro
             return false;
         }
         assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
-        snprintf(sql, 256, "select * from groupRelation where sourceId = %d and destId = %d;", sourceId, destId);  // 再判断是否已经添加过了。
+        snprintf(sql, 256, "select * from groupRelation where sourceId = %d and destId = %d;", sourceId,
+                 destId);  // 再判断是否已经添加过了。
         mysql_query(conn, sql);
         res = mysql_store_result(conn);
         ret = mysql_num_rows(res) == 0;
@@ -690,7 +699,6 @@ std::string MysqlConnectionPool::findGroupNameByGroupId(int groupId) {
 }
 
 
-
 /**
  * 查询用户的名字。
  * @param groupId
@@ -712,6 +720,46 @@ std::string MysqlConnectionPool::findUserNameByUserId(int userId) {
         assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
         pthread_mutex_unlock(&mysql_pool_mutex_);
         delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
+
+
+/**
+ * 直接执行一条给定的sql语句,需要预处理的。
+ * @param sql
+ * @return
+ */
+bool MysqlConnectionPool::sendMessage(const char *sql, const std::string &message) {
+    bool ret = true;
+    MYSQL *conn = nullptr;
+    MYSQL_STMT *stmt;
+    MYSQL_BIND bind[1];
+    if (GetConnection(&conn)) {
+        // 以下都是预处理的步骤。
+        stmt = mysql_stmt_init(conn);
+        assert(mysql_stmt_prepare(stmt, sql, strlen(sql)) == 0);
+        memset(bind, 0, sizeof(bind));
+        char *buffer = new char [message.size() + 1]{'\0'};
+        memcpy(buffer, message.c_str(), message.size());
+        bind[0].buffer_type = MYSQL_TYPE_STRING;
+        bind[0].buffer = buffer;
+        bind[0].buffer_length = strlen(buffer);
+        assert(mysql_stmt_bind_param(stmt, bind) == 0);
+
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+
+        if(mysql_stmt_execute(stmt)!=0) {
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            mysql_stmt_close(stmt);
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
+
+        pthread_mutex_unlock(&mysql_pool_mutex_);
+        mysql_stmt_close(stmt);
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
     }
     ReleaseConnection(conn);  // 使用结束请将资源释放掉。
     return ret;

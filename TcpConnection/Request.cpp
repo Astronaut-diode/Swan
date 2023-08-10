@@ -357,9 +357,9 @@ bool Request::processAddFriendRequest() {
     std::string destId = analysisTag(payload_, "destId");
     std::string session = analysisTag(payload_, "session");
     if (session == session_ && stoi(sourceId) == userId_) {
-        if(!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddFriendRequest(stoi(sourceId),
-                                                                                                       stoi(destId),
-                                                                                                       false)) {
+        if (!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddFriendRequest(stoi(sourceId),
+                                                                                                        stoi(destId),
+                                                                                                        false)) {
             return false;
         }
         Redis::get_singleton_()->publish("friendRequest", stoi(sourceId), stoi(destId));
@@ -510,7 +510,8 @@ bool Request::pushAddGroupRequestMessage(int sourceId, int destId) {
     for (int i = 0; i < ids.size(); ++i) {
         tags += createTagMessage("groupRequest" + std::to_string(i),
                                  ids[i][0] + ":" + ids[i][1] + ":" + ids[i][2] + ":" +
-                                 ids[i][3] + ":" + ids[i][4]);  // 群组请求信息的格式groupRequest[0->n - 1]是tag，信息是添加请求的id，请求者名字:请求者id:群组ID：群组名字。
+                                 ids[i][3] + ":" +
+                                 ids[i][4]);  // 群组请求信息的格式groupRequest[0->n - 1]是tag，信息是添加请求的id，请求者名字:请求者id:群组ID：群组名字。
     }
     tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组请求。
     response_->sendWebSocketResponseBuffer(RET_CODE::ADD_GROUP_REQUEST, "新的群组申请", tags);
@@ -531,8 +532,7 @@ bool Request::acceptOrRefuseAddGroupRequest() {
     if (session == session_ && stoi(masterId) == userId_) {
         char *sql = new char[256];
         snprintf(sql, 256, "update groupRequest set processed = true where sourceId = %d and destId = %d;",
-                 stoi(sourceId),
-                 stoi(groupId));
+                 stoi(groupId), stoi(sourceId)); // 两个参数搞反了。
         MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
         if (process == "yes") {
             snprintf(sql, 256, "insert into groupRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
@@ -592,9 +592,12 @@ bool Request::sendMessage() {
         if (isGroup == "false") {
             char *sql = new char[1024];
             snprintf(sql, 1024,
-                     "insert into friendMessage(sourceId, destId, content, sendTime) values (%d, %d, '%s', now());",
-                     stoi(sourceId), stoi(destId), message.c_str());  // 记录消息内容。
-            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+                     "insert into friendMessage(sourceId, destId, content, sendTime) values (%d, %d, ?, now());",
+                     stoi(sourceId), stoi(destId));  // 记录消息内容。
+            if (!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendMessage(sql, message)) {
+                delete[] sql;
+                return false;
+            }
             Redis::get_singleton_()->publish("friendMessage", stoi(sourceId), stoi(destId));  // 通知目标刷新好友信息。
             delete[] sql;
             ForceSendMessage(stoi(destId), stoi(sourceId));  // 强制更新前端聊天框内容。
@@ -602,9 +605,12 @@ bool Request::sendMessage() {
         } else {
             char *sql = new char[1024];
             snprintf(sql, 1024,
-                     "insert into groupMessage(sourceId, innerSourceId, content, sendTime) values (%d, %d, '%s', now());",
-                     stoi(destId), stoi(sourceId), message.c_str());  // 记录消息内容(此时的destId就是groupId)
-            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+                     "insert into groupMessage(sourceId, innerSourceId, content, sendTime) values (%d, %d, ?, now());",
+                     stoi(destId), stoi(sourceId));  // 记录消息内容(此时的destId就是groupId)
+            if (!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendMessage(sql, message)) {
+                delete[] sql;
+                return false;
+            };
             std::vector<int> members = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllMemberInGroup(
                     stoi(destId));
             for (int member: members) {

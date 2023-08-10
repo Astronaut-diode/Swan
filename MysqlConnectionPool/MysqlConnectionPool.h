@@ -80,6 +80,8 @@ public:
     std::string findGroupNameByGroupId(int groupId);  // 查询群组的名字。
 
     std::string findUserNameByUserId(int userId);  // 查询用户的名字。
+
+    bool sendMessage(const char* sql, const std::string &message);  // 执行需要预处理的发送信息的sql函数。
 };
 
 #endif
