@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include "LogFile.h"
 #include "FixedMemBlock.h"
+#include "../Config/Config.h"
 #include "../Thread/Thread.h"
 #include "../Utils/Utils.h"
 

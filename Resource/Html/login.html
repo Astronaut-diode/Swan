@@ -81,7 +81,7 @@
 
             if (matches) {
                 const contents = matches.map(match => {
-                    const content = match.match(/<.*?>([\s\S]*?)<\/.*?>/)[1];
+                    const content = match.match(/<.*?>([\s\S]*)<\/.*?>/)[1];
                     return content;
                 });
                 return contents;
@@ -332,13 +332,15 @@
             var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "groupChat" + i)[0];
+                console.log(innerContent);
                 var parts = innerContent.split('$:$');
                 var memoId = parts[0], groupId = parts[1], sourceId = parts[2], sourceName = parts[3], message = parts[4], time = parts[5];
+                console.log(time);
                 if (chatMemoIds.has(memoId)) {  // 已经存在的就直接略过。
                     continue;
                 }
                 chatMemoIds.add(memoId);
-
+                console.log(time);
                 var dynamic_body = document.getElementById("chatContainerUl");
                 var newElement = document.createElement("li");
                 // 设置 div 的 innerHTML 为你提供的 HTML 标签内容

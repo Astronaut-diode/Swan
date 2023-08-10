@@ -71,6 +71,7 @@ AsyncLog::AsyncLog(bool outputTerminal) : outputTerminal_(outputTerminal) {
         memset(logDirPath_, '\0', kLogFilePathLength);  // 初始化日志目录路径。
         assert(getcwd(logDirPath_, kLogFilePathLength));  // 获取当前进程执行的时候使用的目录路径。
         strcat(logDirPath_, kLogDirPath);  // 保存日志的路径。
+        snprintf(logDirPath_ + strlen(logDirPath_), kLogFilePathLength, "/%d", getpid());  // 多机的时候，按照进程号
         Utils::mkdir(logDirPath_, strlen(logDirPath_));  // 创建该路径，并且可一次性创建多级目录。
     }
     thread_ = std::make_unique<Thread>(kLogThreadName, std::bind(&AsyncLog::ThreadCallBack, this));  // 创建对应的线程用例。
