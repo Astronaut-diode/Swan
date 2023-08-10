@@ -193,11 +193,35 @@ bool MysqlConnectionPool::Register(const std::string &username, const std::strin
  * 插入好友请求。
  */
 bool MysqlConnectionPool::sendAddFriendRequest(int sourceId, int destId, bool processed) {
-    bool ret = false;
+    bool ret = true;
     MYSQL *conn = nullptr;
     if (GetConnection(&conn)) {
         pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
         char *sql = new char[256]{'\0'};
+        snprintf(sql, 256, "select * from user where userId = %d;", destId);  // 先判断目标用户是否存在。
+        mysql_query(conn, sql);
+        MYSQL_RES *res = mysql_store_result(conn);
+        ret = mysql_num_rows(res) == 1;
+        mysql_free_result(res);  // 及时的释放结果。
+        if (!ret) {
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            delete[] sql;
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        snprintf(sql, 256, "select * from friendRelation where sourceId = %d and destId = %d;", sourceId, destId);  // 再判断是否已经添加过了。
+        mysql_query(conn, sql);
+        res = mysql_store_result(conn);
+        ret = mysql_num_rows(res) == 0;
+        mysql_free_result(res);  // 及时的释放结果。
+        if (!ret) {
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            delete[] sql;
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
         snprintf(sql, 256, "insert into friendRequest(sourceId, destId, processed) values (%d, %d, %d);", sourceId,
                  destId, processed);
         mysql_query(conn, sql);
@@ -222,7 +246,7 @@ bool MysqlConnectionPool::sendAddFriendRequest(int sourceId, int destId, bool pr
  * @return
  */
 bool MysqlConnectionPool::processSql(const char *sql) {
-    bool ret = false;
+    bool ret = true;
     MYSQL *conn = nullptr;
     if (GetConnection(&conn)) {
         pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
@@ -355,11 +379,35 @@ std::vector<std::pair<int, std::string>> MysqlConnectionPool::findAllGroups(int 
  * 插入群组添加请求。
  */
 bool MysqlConnectionPool::sendAddGroupRequest(int sourceId, int destId, bool processed) {
-    bool ret = false;
+    bool ret = true;
     MYSQL *conn = nullptr;
     if (GetConnection(&conn)) {
         pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
         char *sql = new char[256]{'\0'};
+        snprintf(sql, 256, "select * from `group` where groupId = %d;", sourceId);  // 先判断目标群组是否存在。
+        mysql_query(conn, sql);
+        MYSQL_RES *res = mysql_store_result(conn);
+        ret = mysql_num_rows(res) == 1;
+        mysql_free_result(res);  // 及时的释放结果。
+        if (!ret) {
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            delete[] sql;
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        snprintf(sql, 256, "select * from groupRelation where sourceId = %d and destId = %d;", sourceId, destId);  // 再判断是否已经添加过了。
+        mysql_query(conn, sql);
+        res = mysql_store_result(conn);
+        ret = mysql_num_rows(res) == 0;
+        mysql_free_result(res);  // 及时的释放结果。
+        if (!ret) {
+            pthread_mutex_unlock(&mysql_pool_mutex_);
+            delete[] sql;
+            ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+            return false;
+        }
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
         snprintf(sql, 256, "insert into groupRequest(sourceId, destId, processed) values (%d, %d, %d);", sourceId,
                  destId, processed);
         mysql_query(conn, sql);
@@ -444,12 +492,12 @@ std::vector<std::vector<std::string>> MysqlConnectionPool::findAllWaitProcessGro
         pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
         char *sql = new char[512]{'\0'};
         snprintf(sql, 512,
-                 "select user.username, res.* from user inner join (select groupRequest.sourceId, groupRequest.destId, `group`.groupName from groupRequest inner join `group` on groupRequest.destId = `group`.groupId where `group`.masterId = %d and groupRequest.processed = 0) res on res.sourceId = user.userId;",
+                 "select res.groupRequestId, user.username, res.destId, res.sourceId, res.groupName from user inner join (select groupRequest.groupRequestId ,groupRequest.sourceId, groupRequest.destId, `group`.groupName from groupRequest inner join `group` on groupRequest.sourceId = `group`.groupId where `group`.masterId = %d and groupRequest.processed = 0 group by groupRequest.destId, groupRequest.sourceId) res on res.destId = user.userId;",
                  userId);
         mysql_query(conn, sql);
         MYSQL_RES *res = mysql_store_result(conn);
-        while (MYSQL_ROW row = mysql_fetch_row(res)) {  // 取出每一个结果。分别是请求者名字，请求者id,群id，群名字。
-            std::vector<std::string> tmp{row[0], row[1], row[2], row[3]};
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {  // 取出每一个结果。分别是添加请求的id，请求者名字，请求者id,群id，群名字。
+            std::vector<std::string> tmp{row[0], row[1], row[2], row[3], row[4]};
             ret.emplace_back(tmp);
         }
         mysql_free_result(res);  // 及时的释放结果。

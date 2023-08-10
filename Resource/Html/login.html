@@ -67,6 +67,10 @@
 
         // -------------------------------------------------------------------------------------------------------------------------
 
+        function isNumeric(str) {  // 判断是不是数字。
+            return /^\d+$/.test(str);
+        }
+
         function createTag(tagName, content) {  // 创建标签。
             return `<${tagName}>${content}</${tagName}>`;
         }
@@ -190,8 +194,8 @@
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML = `
                 <div id="userMessage" style="width: 15vw;height: 5vh;position: absolute;top: 1vh;right: 1vw;text-align: center;line-height: 5vh;">
-                    <div style="width: 7.5vw;float:left;">用户名:` + username+ `</div>
-                    <div style="width: 7.5vw;float:right;">ID:` + userId+ `</div>
+                    <div style="width: 10vw;float:left;">用户名:` + username+ `</div>
+                    <div style="width: 5vw;float:right;">ID:` + userId+ `</div>
                 </div>
                 <input id="addFriendText" type="text" style="position: absolute;top: 2vh;left: 1vw;width: 10vw;height: 1.8vh;" maxlength="8" placeholder="待添加好友的ID">
                 <button id="addFriendButton" onclick="addFriend();" style="position: absolute;top: 2vh;right: 84vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">添加好友</button>
@@ -223,8 +227,8 @@
 
 
 <div id="loginForm">
-    <input id="username" type="text">
-    <input id="password" type="password">
+    <input id="username" type="text" maxlength="4">
+    <input id="password" type="password" maxlength="8">
     <button id="register" onclick="register();">注册</button>
     <button id="login" onclick="login();">登录</button>
 </div>
@@ -252,9 +256,9 @@
     Connect();  // 每次打开网页或者刷新网页，自动建立websocket连接。
     function sMessage(msg) {  // 接收来自服务器端的信息。
         var content = msg.data;
-        var status = extractTagContent(content, "status");
+        var status = extractTagContent(content, "status")[0];
         if (status == 101) {  // 刷新好友列表。
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "friend" + i)[0];
                 var parts = innerContent.split(':');
@@ -276,7 +280,7 @@
                 dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
         } else if (status == 102) {  // 刷新群组列表。
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "group" + i)[0];
                 var parts = innerContent.split(':');
@@ -298,7 +302,7 @@
                 dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
         } else if (status == 103) {  // 刷新聊天记录为好友之间聊天记录。
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "friendChat" + i)[0];
                 var parts = innerContent.split('$:$');
@@ -323,9 +327,9 @@
             container.scrollTop = container.scrollHeight;
             container = document.getElementById("chatContainerUl");
             container.scrollTop = container.scrollHeight;
-            document.getElementById("chatDetail").innerText = extractTagContent(content, "username");
+            document.getElementById("chatDetail").innerText = extractTagContent(content, "username")[0];
         } else if (status == 104) {  // 刷新聊天记录为群组之间聊天记录。
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "groupChat" + i)[0];
                 var parts = innerContent.split('$:$');
@@ -350,9 +354,9 @@
             container.scrollTop = container.scrollHeight;
             container = document.getElementById("chatContainerUl");
             container.scrollTop = container.scrollHeight;
-            document.getElementById("chatDetail").innerText = extractTagContent(content, "groupName");
+            document.getElementById("chatDetail").innerText = extractTagContent(content, "groupName")[0];
         } else if (status == 200) {
-            var message = extractTagContent(content, "message");
+            var message = extractTagContent(content, "message")[0];
             if (message == "注册成功" || message == "注册失败") {  // 清空输入框。
                 clear("username");
                 clear("password");
@@ -362,18 +366,22 @@
                 clear("password");
                 alert(message);
                 if (message == "登陆成功") {
-                    session = extractTagContent(content, "session");
-                    userId = extractTagContent(content, "userId");
-                    console.log("session的内容是" + session);
-                    console.log("userId的内容是" + userId);
+                    session = extractTagContent(content, "session")[0];
+                    userId = extractTagContent(content, "userId")[0];
                     showMain();
                 }
-            } else if (message == "好友添加请求发送成功" || message == "好友添加请求发送成功") {
+            } else if (message == "好友添加请求发送成功" || message == "好友添加请求发送失败") {
                 clear("addFriendText");
+                alert(message);
+            } else if(message == "群组添加请求发送成功" || message == "群组添加请求发送失败") {
+                alert(message);
+            } else if(message == "好友请求处理成功" || message == "好友请求处理失败") {
+                alert(message);
+            } else if(message == "群组添加请求处理成功" || message == "群组添加请求处理失败") {
                 alert(message);
             }
         } else if (status == 201) {  // 显示请求添加我为好友的请求
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "friendRequest" + i)[0];
                 var parts = innerContent.split(':');
@@ -394,17 +402,23 @@
                 <button onclick="receiveAddRequest(` + num + `,'no', this)">拒绝</button></li>`;
                 dynamic_body.appendChild(newElement);
             }
+            var container = document.getElementById("requestContainerDiv");
+            container.scrollTop = container.scrollHeight;
+            container = document.getElementById("requestContainerUl");
+            container.scrollTop = container.scrollHeight;
         } else if (status == 202) {  // 请求添加我的群组的请求
-            var nums = extractTagContent(content, "nums");
+            console.log(content);
+            var nums = extractTagContent(content, "nums")[0];
+            console.log(nums);
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "groupRequest" + i)[0];
                 console.log(innerContent);
                 var parts = innerContent.split(':');
-                var sourceId = parts[1], sourceName = parts[0], destId = parts[2], destName = parts[3];
-                if (groupRequestIds.has(sourceId)) {  // 已经存在了，就直接略过。
+                var groupRequestId = parts[0], sourceId = parts[2], sourceName = parts[1], destId = parts[3], destName = parts[4];
+                if (groupRequestIds.has(groupRequestId)) {  // 已经存在了，就直接略过。
                     continue;
                 }
-                groupRequestIds.add(sourceId);  // 记录所有想要添加群聊的用户id。
+                groupRequestIds.add(groupRequestId);  // 记录所有想要添加群聊的用户id。
 
                 var dynamic_body = document.getElementById("requestContainerUl");
                 var newElement = document.createElement("li");
@@ -417,14 +431,18 @@
                 <button onclick="receiveAddGroupRequest(` + sourceId + ',' + destId + `,'no', this)">拒绝</button></li>`;
                 dynamic_body.appendChild(newElement);
             }
+            var container = document.getElementById("requestContainerDiv");
+            container.scrollTop = container.scrollHeight;
+            container = document.getElementById("requestContainerUl");
+            container.scrollTop = container.scrollHeight;
         } else if (status == 301) {  // 创建群组的请求。
             clear("createGroupText");
-            var message = extractTagContent(content, "message");
-            console.log(message);
+            var message = extractTagContent(content, "message")[0];
+            alert(message);
         } else if(status == 401) {  // 强制更新前端好友列表。
             friendIds.clear();
             removeAllChild("personContainerUl");
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "friend" + i)[0];
                 var parts = innerContent.split(':');
@@ -448,7 +466,7 @@
         } else if(status == 402) {  // 强制更新前端群组列表。
             groupIds.clear();
             removeAllChild("groupContainerUl");
-            var nums = extractTagContent(content, "nums");
+            var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "group" + i)[0];
                 var parts = innerContent.split(':');
@@ -506,6 +524,11 @@
      */
     function addFriend() {
         var friendId = document.getElementById("addFriendText").value;
+        clear("addFriendText");
+        if(!isNumeric(friendId)) {
+            alert("请输入数字");
+            return;
+        }
         if (friendId.length === 0 || friendId === userId) {
             alert("请输入对方的账号");
             return;
@@ -564,6 +587,10 @@
     function addGroup() {
         var groupId = document.getElementById("addGroupText").value;
         clear("addGroupText");
+        if(!isNumeric(groupId)) {
+            alert("请输入数字");
+            return;
+        }
         if (groupId.length === 0) {
             alert("请输入群ID");
             return;
@@ -612,7 +639,7 @@
         context += createTag("session", session);
         context += createTag("sourceId", sourceId);  // 对方id
         context += createTag("destId", userId);  // 我的id
-        if (chatId != sourceId) {  // 界面上清空列表，并清楚set
+        if (!(chatId == sourceId && !isGroup)) {  // 界面上清空列表，并清楚set
             removeAllChild("chatContainerUl");
             chatMemoIds.clear();
             friendIds.delete(sourceId.toString());
@@ -635,7 +662,7 @@
         context += createTag("session", session);
         context += createTag("groupId", groupId);  // 对方id
         context += createTag("destId", userId);  // 我的id
-        if (chatId != groupId) {  // 界面上清空列表，并清楚set
+        if (!(chatId == groupId && isGroup)) {  // 界面上清空列表，并清楚set
             removeAllChild("chatContainerUl");
             chatMemoIds.clear();
             groupIds.delete(groupId.toString());

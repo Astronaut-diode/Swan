@@ -357,9 +357,11 @@ bool Request::processAddFriendRequest() {
     std::string destId = analysisTag(payload_, "destId");
     std::string session = analysisTag(payload_, "session");
     if (session == session_ && stoi(sourceId) == userId_) {
-        MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddFriendRequest(stoi(sourceId),
-                                                                                                   stoi(destId),
-                                                                                                   false);
+        if(!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddFriendRequest(stoi(sourceId),
+                                                                                                       stoi(destId),
+                                                                                                       false)) {
+            return false;
+        }
         Redis::get_singleton_()->publish("friendRequest", stoi(sourceId), stoi(destId));
         return true;
     }
@@ -481,9 +483,11 @@ bool Request::processAddGroupRequest() {
     std::string groupId = analysisTag(payload_, "destId");
     std::string session = analysisTag(payload_, "session");
     if (session == session_ && stoi(sourceId) == userId_) {
-        MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddGroupRequest(stoi(sourceId),
-                                                                                                  stoi(groupId),
-                                                                                                  false);
+        if (!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->sendAddGroupRequest(stoi(groupId),
+                                                                                                       stoi(sourceId),
+                                                                                                       false)) {
+            return false;
+        }
         int masterId = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserIdByGroupId(
                 std::stoi(groupId));
         Redis::get_singleton_()->publish("groupRequest", stoi(sourceId), masterId);
@@ -506,7 +510,7 @@ bool Request::pushAddGroupRequestMessage(int sourceId, int destId) {
     for (int i = 0; i < ids.size(); ++i) {
         tags += createTagMessage("groupRequest" + std::to_string(i),
                                  ids[i][0] + ":" + ids[i][1] + ":" + ids[i][2] + ":" +
-                                 ids[i][3]);  // 群组请求信息的格式groupRequest[0->n - 1]是tag，信息是请求者名字:请求者id:群组ID：群组名字。
+                                 ids[i][3] + ":" + ids[i][4]);  // 群组请求信息的格式groupRequest[0->n - 1]是tag，信息是添加请求的id，请求者名字:请求者id:群组ID：群组名字。
     }
     tags += createTagMessage("nums", std::to_string(ids.size()));  // 有多少个群组请求。
     response_->sendWebSocketResponseBuffer(RET_CODE::ADD_GROUP_REQUEST, "新的群组申请", tags);
@@ -565,7 +569,9 @@ bool Request::chatWithFriend() {
                                      memo[i][4]);  // 避免切割到时间，使用$:$
         }
         tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
-        tags += createTagMessage("username", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserNameByUserId(stoi(sourceId)));
+        tags += createTagMessage("username",
+                                 MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserNameByUserId(
+                                         stoi(sourceId)));
         response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
         return true;
     }
@@ -599,7 +605,6 @@ bool Request::sendMessage() {
                      "insert into groupMessage(sourceId, innerSourceId, content, sendTime) values (%d, %d, '%s', now());",
                      stoi(destId), stoi(sourceId), message.c_str());  // 记录消息内容(此时的destId就是groupId)
             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
-            // todo:找出目标群组中所有的人，然后告知他们，有新消息。
             std::vector<int> members = MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findAllMemberInGroup(
                     stoi(destId));
             for (int member: members) {
@@ -643,7 +648,9 @@ void Request::ForceSendMessage(int sourceId, int destId) {
                                  memo[i][0] + "$:$" + memo[i][1] + "$:$" + memo[i][2] + "$:$" + memo[i][3] + "$:$" +
                                  memo[i][4]);  // 避免切割到时间，使用$:$
     }
-    tags += createTagMessage("username", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserNameByUserId(sourceId));
+    tags += createTagMessage("username",
+                             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findUserNameByUserId(
+                                     sourceId));
     tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
     response_->sendWebSocketResponseBuffer(RET_CODE::FRIEND_CHAT, "好友之间的聊天记录", tags);
 }
@@ -671,7 +678,9 @@ bool Request::chatWithGroup() {
                                      memo[i][4] + "$:$" + memo[i][5]);  // 避免切割到时间，使用$:$
         }
         tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
-        tags += createTagMessage("groupName", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findGroupNameByGroupId(stoi(sourceId)));
+        tags += createTagMessage("groupName",
+                                 MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findGroupNameByGroupId(
+                                         stoi(sourceId)));
         response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_CHAT, "群组的聊天记录", tags);
         return true;
     }
@@ -695,7 +704,9 @@ void Request::ForceSendGroupMessage(int groupId) {
                                  memo[i][4] + "$:$" + memo[i][5]);  // 避免切割到时间，使用$:$
     }
     tags += createTagMessage("nums", std::to_string(memo.size()));  // 有多少条聊天记录。
-    tags += createTagMessage("groupName", MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findGroupNameByGroupId(groupId));
+    tags += createTagMessage("groupName",
+                             MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->findGroupNameByGroupId(
+                                     groupId));
     response_->sendWebSocketResponseBuffer(RET_CODE::GROUP_CHAT, "群组的聊天记录", tags);
 }
 
