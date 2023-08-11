@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
-    <title>main</title>
+    <title>Swan</title>
 
     <style>
         .container {
@@ -33,7 +33,7 @@
             try {
                 socket = new WebSocket('ws://255.255.255.255:99999');  // 准备进行文本改变，用后台代码设置连接地址。
             } catch (e) {
-                alert("连接出现错误，清重试");
+                alert("连接出现错误，请重试");
                 return;
             }
             socket.onopen = sOpen;
@@ -54,7 +54,7 @@
         }
 
         function sClose(e) {
-            alert("连接已断开，清刷新重试");
+            alert("连接已断开，请刷新重试");
         }
 
         function Send() {
@@ -63,6 +63,8 @@
 
         function Close() {
             socket.close();
+            alert("已登出");
+            location.reload();
         }
 
         // -------------------------------------------------------------------------------------------------------------------------
@@ -188,14 +190,14 @@
             bodyElement.appendChild(newDiv);
         }
 
-        function createMessage() {  // 发送信息栏
+        function createMessage() {  // 各种剩余的信息栏和按钮。
             // 创建一个新的 div 元素
             var newDiv = document.createElement("message");
             // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
             newDiv.innerHTML = `
                 <div id="userMessage" style="width: 15vw;height: 5vh;position: absolute;top: 1vh;right: 1vw;text-align: center;line-height: 5vh;">
-                    <div style="width: 10vw;float:left;">用户名:` + username+ `</div>
-                    <div style="width: 5vw;float:right;">ID:` + userId+ `</div>
+                    <div style="width: 10vw;float:left;">用户名:` + username + `</div>
+                    <div style="width: 5vw;float:right;">ID:` + userId + `</div>
                 </div>
                 <input id="addFriendText" type="text" style="position: absolute;top: 2vh;left: 1vw;width: 10vw;height: 1.8vh;" maxlength="8" placeholder="待添加好友的ID">
                 <button id="addFriendButton" onclick="addFriend();" style="position: absolute;top: 2vh;right: 84vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">添加好友</button>
@@ -205,6 +207,7 @@
                 <button id="createGroupButton" onclick="createGroupByName();" style="position: absolute;top: 2vh;right: 45vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">创建群组</button>
                 <textarea id="message" style="position: absolute;top: 77vh;left: 20vw;width: 60vw;height: 18vh;padding: 0;border: 2px solid #ccc;" maxlength="512" wrap="soft" placeholder="待发送的信息"></textarea>
                 <button id="sendMessageButton" onclick="sendMessage();" style="position: absolute;top: 86vh;right: 20.5vw;width: 4vw;height: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">发送信息</button>
+                <button id="exitButton" onclick="Close();" style="position: absolute;top: 2vh;right: 20vw;width: 4vw;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;">退出</button>
             `;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
             var bodyElement = document.querySelector("body");
@@ -225,12 +228,15 @@
 
 <body>
 
-
-<div id="loginForm">
-    <input id="username" type="text" maxlength="8">
-    <input id="password" type="password" maxlength="16">
-    <button id="register" onclick="register();">注册</button>
-    <button id="login" onclick="login();">登录</button>
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;" id="loginForm">
+    <div style="width: 300px; background-color: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 10px;"><input id="username" type="text" maxlength="8" style="width: 100%;padding: 0; height:5vh; border: 1px solid #ddd; border-radius: 5px;" placeholder="请输入用户名"></div>
+            <div style="margin-bottom: 10px;"><input id="password" type="password" maxlength="16" style="width: 100%; padding: 0; height: 5vh; border: 1px solid #ddd; border-radius: 5px;" placeholder="请输入密码"></div>
+        </div>
+        <button id="register" onclick="register();" style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">注册</button>
+        <button id="login" onclick="login();" style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">登录</button>
+    </div>
 </div>
 
 
@@ -274,7 +280,7 @@
                 newElement.innerHTML =
                     `<li class="list-item" onclick="chatWithFriend(` + num + `, this);">`
                     +
-                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
+                    num + "   " + text + (unreadCount == '0' ? "" : "  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
                 dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
@@ -296,7 +302,7 @@
                 newElement.innerHTML =
                     `<li class="list-item" onclick="chatWithGroup(` + num + `, this);">`
                     +
-                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
+                    num + "   " + text + (unreadCount == '0' ? "" : "  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
                 dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
@@ -334,7 +340,8 @@
                 var innerContent = extractTagContent(content, "groupChat" + i)[0];
                 console.log(innerContent);
                 var parts = innerContent.split('$:$');
-                var memoId = parts[0], groupId = parts[1], sourceId = parts[2], sourceName = parts[3], message = parts[4], time = parts[5];
+                var memoId = parts[0], groupId = parts[1], sourceId = parts[2], sourceName = parts[3],
+                    message = parts[4], time = parts[5];
                 console.log(time);
                 if (chatMemoIds.has(memoId)) {  // 已经存在的就直接略过。
                     continue;
@@ -375,13 +382,13 @@
             } else if (message == "好友添加请求发送成功" || message == "好友添加请求发送失败") {
                 clear("addFriendText");
                 alert(message);
-            } else if(message == "群组添加请求发送成功" || message == "群组添加请求发送失败") {
+            } else if (message == "群组添加请求发送成功" || message == "群组添加请求发送失败") {
                 alert(message);
-            } else if(message == "好友请求处理成功" || message == "好友请求处理失败") {
+            } else if (message == "好友请求处理成功" || message == "好友请求处理失败") {
                 alert(message);
-            } else if(message == "群组添加请求处理成功" || message == "群组添加请求处理失败") {
+            } else if (message == "群组添加请求处理成功" || message == "群组添加请求处理失败") {
                 alert(message);
-            } else if(message == "信息发送失败") {
+            } else if (message == "信息发送失败") {
                 alert("输入含有非法字符，信息发送失败");
             }
         } else if (status == 201) {  // 显示请求添加我为好友的请求
@@ -418,7 +425,8 @@
                 var innerContent = extractTagContent(content, "groupRequest" + i)[0];
                 console.log(innerContent);
                 var parts = innerContent.split(':');
-                var groupRequestId = parts[0], sourceId = parts[2], sourceName = parts[1], destId = parts[3], destName = parts[4];
+                var groupRequestId = parts[0], sourceId = parts[2], sourceName = parts[1], destId = parts[3],
+                    destName = parts[4];
                 if (groupRequestIds.has(groupRequestId)) {  // 已经存在了，就直接略过。
                     continue;
                 }
@@ -443,7 +451,7 @@
             clear("createGroupText");
             var message = extractTagContent(content, "message")[0];
             alert(message);
-        } else if(status == 401) {  // 强制更新前端好友列表。
+        } else if (status == 401) {  // 强制更新前端好友列表。
             friendIds.clear();
             removeAllChild("personContainerUl");
             var nums = extractTagContent(content, "nums")[0];
@@ -462,12 +470,12 @@
                 newElement.innerHTML =
                     `<li class="list-item" onclick="chatWithFriend(` + num + `, this);">`
                     +
-                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
+                    num + "   " + text + (unreadCount == '0' ? "" : "  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
                 dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
             }
-        } else if(status == 402) {  // 强制更新前端群组列表。
+        } else if (status == 402) {  // 强制更新前端群组列表。
             groupIds.clear();
             removeAllChild("groupContainerUl");
             var nums = extractTagContent(content, "nums")[0];
@@ -486,7 +494,7 @@
                 newElement.innerHTML =
                     `<li class="list-item" onclick="chatWithGroup(` + num + `, this);">`
                     +
-                    num + "   " + text + (unreadCount == '0' ? "":"  有" + unreadCount + "条未读消息")
+                    num + "   " + text + (unreadCount == '0' ? "" : "  有" + unreadCount + "条未读消息")
                     +
                     `</li>`;
                 dynamic_body.insertBefore(newElement, dynamic_body.firstChild);
@@ -529,7 +537,7 @@
     function addFriend() {
         var friendId = document.getElementById("addFriendText").value;
         clear("addFriendText");
-        if(!isNumeric(friendId)) {
+        if (!isNumeric(friendId)) {
             alert("请输入数字");
             return;
         }
@@ -591,7 +599,7 @@
     function addGroup() {
         var groupId = document.getElementById("addGroupText").value;
         clear("addGroupText");
-        if(!isNumeric(groupId)) {
+        if (!isNumeric(groupId)) {
             alert("请输入数字");
             return;
         }
@@ -643,7 +651,7 @@
         context += createTag("session", session);
         context += createTag("sourceId", sourceId);  // 对方id
         context += createTag("destId", userId);  // 我的id
-        if (!(chatId == sourceId && !isGroup)) {  // 界面上清空列表，并清楚set
+        if (!(chatId == sourceId && !isGroup)) {  // 界面上清空列表，并清除set
             removeAllChild("chatContainerUl");
             chatMemoIds.clear();
             friendIds.delete(sourceId.toString());
@@ -666,7 +674,7 @@
         context += createTag("session", session);
         context += createTag("groupId", groupId);  // 对方id
         context += createTag("destId", userId);  // 我的id
-        if (!(chatId == groupId && isGroup)) {  // 界面上清空列表，并清楚set
+        if (!(chatId == groupId && isGroup)) {  // 界面上清空列表，并清除set
             removeAllChild("chatContainerUl");
             chatMemoIds.clear();
             groupIds.delete(groupId.toString());
@@ -689,8 +697,8 @@
             alert("请输入消息");
             return;
         }
-        if(chatId == -1) {
-            alert("清选择聊天对象！");
+        if (chatId == -1) {
+            alert("请选择聊天对象！");
             return;
         }
         var context = "";

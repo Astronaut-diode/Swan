@@ -63,6 +63,42 @@ void LogFile::append(const char *data, int size) {
         time_t time = std::chrono::system_clock::to_time_t(now);
         if(size_ > kMaxSize || time - lastTime_ > kMaxInterval) {  // 如果内容超出了限制或者时间太久了，都要改换文件。
             reset();
+            removeMoreLog(logDirPath_);
         }
+    }
+}
+
+/**
+ * 删除多余的日志文件。
+ * @param LogDir
+ */
+void LogFile::removeMoreLog(const std::string &LogDir) {
+    DIR* dir = opendir(LogDir.c_str());
+    assert(dir);
+
+    std::vector<std::string> files;
+    struct dirent* entry;
+    while ((entry = readdir(dir))) {
+        if (entry->d_type == DT_REG) {
+            files.push_back(LogDir + "/" + entry->d_name);
+        }
+    }
+    closedir(dir);
+
+    if (files.size() <= kMaxLogNumber) {
+        return;
+    }
+
+    struct stat fileStat;
+    std::sort(files.begin(), files.end(), [&fileStat](const std::string& a, const std::string& b) {
+        stat(a.c_str(), &fileStat);
+        time_t timeA = fileStat.st_mtime;
+        stat(b.c_str(), &fileStat);
+        time_t timeB = fileStat.st_mtime;
+        return timeA < timeB;
+    });
+
+    for (size_t i = 0; i < files.size() - 10; ++i) {
+        assert(remove(files[i].c_str()) == 0);
     }
 }

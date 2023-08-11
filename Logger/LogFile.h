@@ -13,6 +13,10 @@
 #include <unistd.h>
 #include <chrono>
 #include <ctime>
+#include <dirent.h>
+#include <vector>
+#include <sys/stat.h>
+#include <algorithm>
 
 class LogFile {
 public:  // 用于写typedef或者静态常量等。
@@ -20,6 +24,7 @@ public:  // 用于写typedef或者静态常量等。
     static const int kLogFileNameLength = 128;  // 日志文件夹路径的最长长度。
     static const int kMaxSize = 40 * 1024 * 1024;  // 日志文件的最大大小为40M。
     static const int kMaxInterval = 10 * 60;  // 日志文件的最大时间间隔为10分钟。
+    static const int kMaxLogNumber = 50;  // 最多同时保存多少个日志文件。
 private:  // 变量区域
     bool writeCout_;  // 是否是使用cout输出。
     char logDirPath_[kLogDirPathLength];  // 日志文件夹的路径。
@@ -30,6 +35,7 @@ private:  // 变量区域
 public:
 
 private:  // 函数区域
+    void removeMoreLog(const std::string &LogDir);  // 删除多余的日志文件。
 
 public:
     LogFile() {};
