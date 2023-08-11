@@ -24,7 +24,8 @@ public:  // 用于写typedef或者静态常量等。
     static const int kFilePathMaxLength = 256;
     enum SEND_TYPE {  // 发送的类型。
         ICON = 0,
-        HTML
+        HTML = 1,
+        GIF = 2
     };
 private:  // 变量区域
     int clientFd_;  // 对方的文件描述符。

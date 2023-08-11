@@ -42,6 +42,8 @@ void Response::sendResourceFile(Response::SEND_TYPE sendType, const char *fileNa
         AddHeader(response_file_stat_.st_size, "text/html;utf-8");
     } else if (sendType == SEND_TYPE::ICON) {
         AddHeader(response_file_stat_.st_size, "image/x-icon");
+    } else if(sendType == SEND_TYPE::GIF) {
+        AddHeader(response_file_stat_.st_size, "image/gif");
     }
     iov_[0].iov_base = buffer_;
     iov_[0].iov_len = writeNextIndex_;

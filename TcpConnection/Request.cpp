@@ -5,6 +5,8 @@
 
 #include "Request.h"
 
+std::string Request::resourceFileDir = "/Resource/Img";
+
 Request::Request(int clientFd) : clientFd_(clientFd),
                                  response_(std::make_unique<Response>(clientFd_)),
                                  userId_(-1) {
@@ -44,8 +46,8 @@ bool Request::receiveHTTPRequest() {
         }
     }
     LOG << "接收到的HTTP请求" << buffer_;
-    if (strstr(buffer_, "/favicon")) {  // 网页图标。
-        response_->sendResourceFile(Response::SEND_TYPE::ICON, "/Resource/Img/favicon.ico");
+    if (strstr(buffer_, "GET / HTTP/1.1") && !strstr(buffer_, "websocket")) {  // 默认请求。
+        response_->sendResourceFile(Response::SEND_TYPE::HTML, "/Resource/Html/login.html");
         reset();
         return false;
     } else if (strstr(buffer_, "websocket")) {  // 请求建立连接。
@@ -54,10 +56,45 @@ bool Request::receiveHTTPRequest() {
         response_->establishWebSocketConnection();
         reset();
         return true;
-    } else {  // 默认的初始连接。
-        response_->sendResourceFile(Response::SEND_TYPE::HTML, "/Resource/Html/login.html");
-        reset();
-        return false;
+    } else {
+        char *end = strstr(buffer_, "HTTP/1.1");
+        char *tmp = new char[128]{'\0'};
+        if (!end) {
+            reset();
+            return false;
+        }
+        strncpy(tmp, buffer_, end - buffer_);  // 截取出第一行的内容，分析出要请求的目标是谁。
+        char *target = strrchr(tmp, '/');  // 带有目标，但是还是比较长，需要继续处理。
+        if (!target) {
+            reset();
+            return false;
+        }
+        target[strlen(target) - 1] = '\0';  // 处理完成。
+        DIR* dir = opendir(("." + resourceFileDir).c_str());  // 打开资源文件夹
+        assert(dir);
+        std::vector<std::string> files;
+        struct dirent* entry;
+        while ((entry = readdir(dir))) {
+            if (entry->d_type == DT_REG) {
+                std::string tmp = "";
+                tmp +=  "/";
+                tmp +=  entry->d_name;
+                files.push_back(tmp);
+            }
+        }
+        closedir(dir);
+        if(std::find(files.begin(), files.end(), target) != files.end()) {  // 如果文件存在，那么就返回。
+            if(strstr(target, ".ico")) {
+                response_->sendResourceFile(Response::SEND_TYPE::ICON, (resourceFileDir + target).c_str());
+            } else if(strstr(target, ".gif")) {
+                response_->sendResourceFile(Response::SEND_TYPE::GIF, (resourceFileDir + target).c_str());
+            }
+            reset();
+            return true;
+        } else {
+            reset();
+            return false;
+        }
     }
 }
 

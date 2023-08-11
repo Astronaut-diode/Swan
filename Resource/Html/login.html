@@ -182,7 +182,7 @@
                 `<div style="width: 60vw;height: 5vh;border: 2px solid #ccc;position: absolute;top: 6vh;left: 20vw;text-align: center;line-height: 5vh;" id="chatDetail">无</div>
                 <div class="container" id="chatContainerDiv" style="width: 60vw;height: 65vh;border: 2px solid #ccc;position: absolute;top: 11vh;left: 20vw;">
                   <ul class="list" id="chatContainerUl">
-                    
+
                   </ul>
                 </div>`;
             // 获取 body 元素，并将新创建的 div 元素插入到 body 中
@@ -238,18 +238,6 @@
         <button id="login" onclick="login();" style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">登录</button>
     </div>
 </div>
-
-
-<!--<table border="1px" style="width: 640px;text-align: center; margin: auto; table-layout: fixed;">-->
-<!--    <thead>-->
-<!--    <tr>-->
-<!--        <th>内容</th>-->
-<!--    </tr>-->
-<!--    </thead>-->
-<!--    <tbody id="dynamic_body">-->
-
-<!--    </tbody>-->
-<!--</table>-->
 
 </body>
 
@@ -320,14 +308,24 @@
 
                 var dynamic_body = document.getElementById("chatContainerUl");
                 var newElement = document.createElement("li");
-                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
-                newElement.innerHTML =
-                    `<li class="list-item">`
-                    +
-                    sourceName + '   [' + time + ']' + "\n" + message
-                    +
-                    `</li>`;
-                dynamic_body.appendChild(newElement);
+
+                if(sourceId == userId) {  // 显示在右边。
+                    newElement.innerHTML =
+                        `<li class="list-item" style="text-align: right;color:green;">`
+                        +
+                        '[' + time + ']   ' + sourceName + "\n" + `<span style="color: black;">` + message + `</span>`
+                        +
+                        `</li>`;
+                    dynamic_body.appendChild(newElement);
+                } else {
+                    newElement.innerHTML =
+                        `<li class="list-item" style="text-align: left;color:blue;">`
+                        +
+                        sourceName + '   [' + time + ']' + "\n" + `<span style="color: black;">` + message + `</span>`
+                        +
+                        `</li>`;
+                    dynamic_body.appendChild(newElement);
+                }
             }
             var container = document.getElementById("chatContainerDiv");
             container.scrollTop = container.scrollHeight;
@@ -338,26 +336,33 @@
             var nums = extractTagContent(content, "nums")[0];
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "groupChat" + i)[0];
-                console.log(innerContent);
                 var parts = innerContent.split('$:$');
                 var memoId = parts[0], groupId = parts[1], sourceId = parts[2], sourceName = parts[3],
                     message = parts[4], time = parts[5];
-                console.log(time);
                 if (chatMemoIds.has(memoId)) {  // 已经存在的就直接略过。
                     continue;
                 }
                 chatMemoIds.add(memoId);
-                console.log(time);
                 var dynamic_body = document.getElementById("chatContainerUl");
                 var newElement = document.createElement("li");
-                // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
-                newElement.innerHTML =
-                    `<li class="list-item">`
-                    +
-                    sourceName + '   [' + time + ']' + "\n" + message
-                    +
-                    `</li>`;
-                dynamic_body.appendChild(newElement);
+
+                if(sourceId == userId) {  // 显示在右边。
+                    newElement.innerHTML =
+                        `<li class="list-item" style="text-align: right;color:green;">`
+                        +
+                        '[' + time + ']   ' + sourceName + "\n" + `<span style="color: black;">` + message + `</span>`
+                        +
+                        `</li>`;
+                    dynamic_body.appendChild(newElement);
+                } else {
+                    newElement.innerHTML =
+                        `<li class="list-item" style="text-align: left;color:blue;">`
+                        +
+                        sourceName + '   [' + time + ']' + "\n" + `<span style="color: black;">` + message + `</span>`
+                        +
+                        `</li>`;
+                    dynamic_body.appendChild(newElement);
+                }
             }
             var container = document.getElementById("chatContainerDiv");
             container.scrollTop = container.scrollHeight;
@@ -418,12 +423,9 @@
             container = document.getElementById("requestContainerUl");
             container.scrollTop = container.scrollHeight;
         } else if (status == 202) {  // 请求添加我的群组的请求
-            console.log(content);
             var nums = extractTagContent(content, "nums")[0];
-            console.log(nums);
             for (var i = 0; i < nums; ++i) {
                 var innerContent = extractTagContent(content, "groupRequest" + i)[0];
-                console.log(innerContent);
                 var parts = innerContent.split(':');
                 var groupRequestId = parts[0], sourceId = parts[2], sourceName = parts[1], destId = parts[3],
                     destName = parts[4];

@@ -594,7 +594,7 @@ std::vector<std::vector<std::string>> MysqlConnectionPool::findAllGroupMessage(i
         pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
         char *sql = new char[1024]{'\0'};
         snprintf(sql, 1024,
-                 "select res.groupMessageId, res.sourceId, res.innerSourceId, user.username, res.content, res.sendTime from user inner join (select * from groupMessage where sourceId = %d) res on user.userId = res.innerSourceId;",
+                 "select res.groupMessageId, res.sourceId, res.innerSourceId, user.username, res.content, res.sendTime from user inner join (select * from groupMessage where sourceId = %d) res on user.userId = res.innerSourceId order by res.groupMessageId;",  // 添加了排序。
                  sourceId);
         mysql_query(conn, sql);
         MYSQL_RES *res = mysql_store_result(conn);

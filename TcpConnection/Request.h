@@ -25,6 +25,7 @@ typedef std::map<std::string, std::string> HEADER_MAP;
 class Request {
 public:  // 用于写typedef或者静态常量等。
     static const int kReadBufferMaxLength = 4 * 1024;
+    static std::string resourceFileDir;  // img文件夹的位置。
     enum RET_CODE {
         FRIEND_LIST = 101,  // 好友列表
         GROUP_LIST = 102,  // 群组列表
