@@ -44,6 +44,35 @@
 
         function sOpen() {
             console.log("连接建立成功");
+
+            // 创建一个新的 div 元素
+            var newDiv = document.createElement("message");
+            // 设置 div 的 innerHTML 为你提供的 HTML 标签内容
+            newDiv.innerHTML = `
+                <div
+                style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;"
+                id="loginForm">
+                <div
+                    style="width: 300px; background-color: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);">
+                    <div style="margin-bottom: 15px;">
+                        <div style="margin-bottom: 10px;"><input id="username" type="text" maxLength="8"
+                                                                 style="width: 100%;padding: 0; height:5vh; border: 1px solid #ddd; border-radius: 5px;"
+                                                                 placeholder="请输入用户名"></div>
+                        <div style="margin-bottom: 10px;"><input id="password" type="password" maxLength="16"
+                                                                 style="width: 100%; padding: 0; height: 5vh; border: 1px solid #ddd; border-radius: 5px;"
+                                                                 placeholder="请输入密码"></div>
+                    </div>
+                    <button id="register" onClick="register();"
+                            style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">注册
+                    </button>
+                    <button id="login" onClick="login();"
+                            style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">登录
+                    </button>
+                </div>
+            </div>`;
+            // 获取 body 元素，并将新创建的 div 元素插入到 body 中
+            var bodyElement = document.querySelector("body");
+            bodyElement.appendChild(newDiv);
         }
 
         var b;
@@ -227,17 +256,6 @@
 </head>
 
 <body>
-
-<div style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;" id="loginForm">
-    <div style="width: 300px; background-color: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);">
-        <div style="margin-bottom: 15px;">
-            <div style="margin-bottom: 10px;"><input id="username" type="text" maxlength="8" style="width: 100%;padding: 0; height:5vh; border: 1px solid #ddd; border-radius: 5px;" placeholder="请输入用户名"></div>
-            <div style="margin-bottom: 10px;"><input id="password" type="password" maxlength="16" style="width: 100%; padding: 0; height: 5vh; border: 1px solid #ddd; border-radius: 5px;" placeholder="请输入密码"></div>
-        </div>
-        <button id="register" onclick="register();" style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">注册</button>
-        <button id="login" onclick="login();" style="display: block; width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">登录</button>
-    </div>
-</div>
 
 </body>
 
