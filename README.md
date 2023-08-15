@@ -70,6 +70,10 @@ https://github.com/Astronaut-diode/Swan/assets/57606131/d7922c1f-b617-4196-b32c-
 8. 浏览器端访问**IP地址:端口号**
 
 
+## Maintainers
+
+[@Astronaut-diode](https://github.com/Astronaut-diode)
+
 ## 致谢
 
 [TinyWebServer](https://github.com/qinguoyi/TinyWebServer)
