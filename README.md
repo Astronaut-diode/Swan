@@ -43,7 +43,7 @@
 
 4. 如果有nginx服务，可以参考nginx.conf中的配置，并启动对应sbin下的nginx，如[/usr/local/nginx/sbin/nginx];后面访问localhost即可。
 
-5. 如果是使用了阿里云，那么nginx中负载均衡的地址是对应的私地址，启动的ip地址使用对应的私地址，但是连接websocket的ip地址需要是给定的公网地址(更改Response.cpp:35)。
+5. 如果是使用了阿里云，那么nginx中负载均衡的地址是对应的私地址，第7步中启动的ip地址使用对应的私地址，但是连接websocket的ip地址需要是给定的公网地址(更改Response.cpp:35)，使用浏览器进行访问时，使用的也是公网地址。
 
    ``` c++
    if (target) {
@@ -59,7 +59,7 @@
    ```
 
 7. ``` shell
-   ./Swan [监听的IP地址] [监听的端口号] # 
+   ./Swan [监听的IP地址] [监听的端口号] # 需要绑定的IP与端口号。
    ```
 
 8. 浏览器端访问**IP地址:端口号**
