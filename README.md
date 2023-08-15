@@ -72,7 +72,12 @@ https://github.com/Astronaut-diode/Swan/assets/57606131/d7922c1f-b617-4196-b32c-
 
 ## Maintainers
 
-[@Astronaut-diode](https://github.com/Astronaut-diode)
+[@Astronaut-diode](https://github.com/Astronaut-diode) 
+
+浙江工业大学 软件工程专业硕士在读
+
+邮箱地址:925791559@qq.com
+
 
 ## 致谢
 
