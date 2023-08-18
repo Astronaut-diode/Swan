@@ -38,13 +38,13 @@ https://github.com/Astronaut-diode/Swan/assets/57606131/d7922c1f-b617-4196-b32c-
    sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
    ```
 
-2. 创建Swan数据库。
+2. 修改Config.cpp中的Config构造函数，其中包含了mysql以及redis的连接参数。
 
-   ``` sql
-   create database Swan character set utf8mb4 collate utf8mb4_unicode_ci;
+3. 修改build.sh中的数据库连接密码，执行脚本创建对应的数据库和数据表。
+
+   ``` shell
+   /bin/sh build.sh
    ```
-
-3. 修改Config.cpp中的Config构造函数，其中包含了mysql以及redis的连接参数。
 
 4. 如果有nginx服务，可以参考nginx.conf中的配置，并启动对应sbin下的nginx，如[/usr/local/nginx/sbin/nginx];后面访问localhost即可。
 
