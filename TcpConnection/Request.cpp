@@ -404,14 +404,16 @@ bool Request::acceptOrRefuseAddFriendRequest() {
                  stoi(destId));
         MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
         if (process == "yes") {
-            snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
-                     stoi(sourceId),
-                     stoi(destId));
-            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
-            snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
-                     stoi(destId),
-                     stoi(sourceId));
-            MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            if(!MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->isFriend(stoi(sourceId), stoi(destId))) {  // 如果不是好友，才能添加为好友，但是总是要通知对方更新列表的。
+                snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
+                         stoi(sourceId),
+                         stoi(destId));
+                MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+                snprintf(sql, 256, "insert into friendRelation(sourceId, destId, lastReadTime) values (%d, %d, now());",
+                         stoi(destId),
+                         stoi(sourceId));
+                MysqlConnectionPool::get_mysql_connection_pool_singleton_instance_()->processSql(sql);
+            }
             Redis::get_singleton_()->publish("friendList", stoi(destId), stoi(sourceId));  // 通知目标刷新好友列表。
             Redis::get_singleton_()->publish("friendList", stoi(sourceId), stoi(destId));  // 通知目标刷新好友列表。
         }

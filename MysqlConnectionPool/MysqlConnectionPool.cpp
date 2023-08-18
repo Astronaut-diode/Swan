@@ -764,3 +764,30 @@ bool MysqlConnectionPool::sendMessage(const char *sql, const std::string &messag
     ReleaseConnection(conn);  // 使用结束请将资源释放掉。
     return ret;
 }
+
+/**
+ * 验证两个人是否是好友关系。
+ * @param userIdA
+ * @param userIdB
+ * @return
+ */
+bool MysqlConnectionPool::isFriend(int userIdA, int userIdB) {
+    bool ret = false;
+    MYSQL *conn = nullptr;
+    if (GetConnection(&conn)) {
+        pthread_mutex_lock(&mysql_pool_mutex_);  // 操作连接池一定要锁定，不然就会出现线程不安全的问题。
+        char *sql = new char[256];
+        snprintf(sql, 256, "select count(*) from friendRelation where sourceId = %d and destId = %d;", userIdA, userIdB);
+        mysql_query(conn, sql);
+        MYSQL_RES *res = mysql_store_result(conn);
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {  // 取出每一个结果。分别是聊天记录id, 请求者id，请求者name,信息内容，时间。
+            ret = atoi(row[0]) > 0;  // 如果有好友就是true，否则就是false。
+        }
+        mysql_free_result(res);  // 及时的释放结果。
+        assert(mysql_errno(conn) == 0);  // 这时候是没有发生错误的
+        pthread_mutex_unlock(&mysql_pool_mutex_);
+        delete[] sql;
+    }
+    ReleaseConnection(conn);  // 使用结束请将资源释放掉。
+    return ret;
+}
