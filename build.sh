@@ -1,5 +1,5 @@
 #!/bin/bash
-mysql -u root -p [输入密码] Swan << EOF 2>/dev/null
+mysql -uroot -p[输入密码] << EOF 2>/dev/null
 
 create database if not exists Swan character set utf8mb4 collate utf8mb4_unicode_ci;
 use Swan;
