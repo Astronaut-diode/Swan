@@ -5,8 +5,8 @@ create database if not exists Swan character set utf8mb4 collate utf8mb4_unicode
 use Swan;
 drop table if exists user;
 create table if not exists user(userId   int primary key auto_increment comment '用户id',username varchar(128) comment '用户账户',password varchar(128) comment '用户密码') comment '用户表' character set utf8mb4 collate utf8mb4_unicode_ci;
-drop table if exists group;
-create table if not exists group(groupId   int primary key auto_increment comment '群的id',groupName varchar(128) comment '群组的名字',masterId  int comment '群主的用户id') comment '群组表' character set utf8mb4 collate utf8mb4_unicode_ci;
+drop table if exists \`group\`;
+create table if not exists \`group\`(groupId   int primary key auto_increment comment '群的id',groupName varchar(128) comment '群组的名字',masterId  int comment '群主的用户id') comment '群组表' character set utf8mb4 collate utf8mb4_unicode_ci;
 drop table if exists friendRelation;
 create table if not exists friendRelation(friendRelationId int primary key auto_increment comment '一组关系的主键',sourceId         int comment '出发点（好友id）',destId           int comment '目标点',lastReadTime     timestamp comment '最后一次dest_id用户接收source_id(仅仅是用户)信息的时间。') comment '关系表，仅记录好友关系，以及该用户接收该关系发送过来信息的最后一次时间。' character set utf8mb4 collate utf8mb4_unicode_ci;
 drop table if exists groupRelation;
